@@ -1,12 +1,194 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
 
-:root {
-  color-scheme: dark;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background-color: #020617 !important;
-  color: #f8fafc !important;
-  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  background-color: #090d16;
+  color: #f1f5f9;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
   min-height: 100vh;
+  padding: 16px;
+  line-height: 1.5;
+}
+
+/* Studio Main Layout */
+.studio-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Header */
+.studio-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #1e293b;
+}
+
+@media (min-width: 600px) {
+  .studio-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.studio-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+.studio-subtitle {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.btn-group {
+  display: flex;
+  gap: 8px;
+}
+
+/* Cards & Containers */
+.card {
+  background-color: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+}
+
+.card-inner {
+  background-color: #030712;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 12px;
+}
+
+/* Form Inputs */
+.input-field {
+  width: 100%;
+  background-color: #030712;
+  border: 1px solid #334155;
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 14px;
+  outline: none;
+  margin-bottom: 12px;
+  font-family: inherit;
+}
+
+.input-field:focus {
+  border-color: #f59e0b;
+}
+
+/* Buttons */
+.btn-secondary {
+  background-color: #1e293b;
+  color: #f8fafc;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: #334155;
+}
+
+.btn-primary {
+  width: 100%;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #090d16;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-copy {
+  background-color: #1e293b;
+  color: #fbbf24;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Text & Utilities */
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.prompt-box {
+  font-family: monospace;
+  font-size: 12px;
+  color: #fde68a;
+  background-color: #030712;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #1f2937;
+  word-break: break-word;
+}
+
+.narration-box {
+  font-size: 13px;
+  font-style: italic;
+  color: #e2e8f0;
+  background-color: #030712;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #1f2937;
+}
+
+.tag {
+  display: inline-block;
+  background-color: #1e293b;
+  color: #fbbf24;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  margin-right: 6px;
+  margin-top: 4px;
+  border: 1px solid #334155;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
