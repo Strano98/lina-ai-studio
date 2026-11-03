@@ -18,10 +18,13 @@ export default function StudioDashboard() {
   const [showSaved, setShowSaved] = useState(false);
   const [error, setError] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Image Rendering & Cooldown States
   const [renderedImages, setRenderedImages] = useState<{ [key: string]: string }>({});
   const [renderingIndex, setRenderingIndex] = useState<string | null>(null);
+  const [cooldowns, setCooldowns] = useState<{ [key: string]: number }>({});
 
-  // Production Checklist State
+  // Mobile Production Checklist State
   const [checklist, setChecklist] = useState({
     script: true,
     voiceover: false,
@@ -44,6 +47,24 @@ export default function StudioDashboard() {
         console.error('Error loading saved projects', e);
       }
     }
+  }, []);
+
+  // Cooldown timer effect for free rendering rate limits
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCooldowns((prev) => {
+        const next = { ...prev };
+        let updated = false;
+        Object.keys(next).forEach((key) => {
+          if (next[key] > 0) {
+            next[key] -= 1;
+            updated = true;
+          }
+        });
+        return updated ? next : prev;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const saveApiKey = (key: string) => {
@@ -80,23 +101,31 @@ export default function StudioDashboard() {
   };
 
   const renderFreeImage = (promptText: string, id: string) => {
+    if (cooldowns[id] && cooldowns[id] > 0) return;
+
     setRenderingIndex(id);
-    // Pollinations AI - 100% Free image generation engine
     const encodedPrompt = encodeURIComponent(
-      `${promptText}, 3d preschool animation, 8k render, linear lighting, highly detailed`
+      `${promptText}, 3d preschool animation, Pixar render, 8k, bright lighting, colorful`
     );
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1280&height=720&nologo=true&seed=${Math.floor(Math.random() * 1000)}`;
+    const seed = Math.floor(Math.random() * 99999);
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?model=turbo&width=1280&height=720&nologo=true&seed=${seed}`;
 
     const img = new Image();
     img.src = imageUrl;
     img.onload = () => {
       setRenderedImages((prev) => ({ ...prev, [id]: imageUrl }));
       setRenderingIndex(null);
+      setCooldowns((prev) => ({ ...prev, [id]: 45 }));
     };
     img.onerror = () => {
       setRenderingIndex(null);
-      alert('Error rendering image. Please try again.');
+      setCooldowns((prev) => ({ ...prev, [id]: 45 }));
     };
+  };
+
+  // Helper to format Google Flow (Veo 3.1) prompts
+  const buildGoogleFlowPrompt = (videoPrompt: string, narration: string, sfx?: string) => {
+    return `${videoPrompt}. Style: Colorful 3D preschool animation, 16:9 widescreen, cinematic lighting. Character details: Lina (5-year-old girl, round face, wavy dark hair, yellow hair clip, yellow top, turquoise overalls) and Magic Train (cute colorful friendly train). Audio: Dialogue "${narration}". ${sfx ? `Sound effects: ${sfx}.` : ''}`;
   };
 
   const generateProductionPlan = async () => {
@@ -145,7 +174,7 @@ Return ONLY valid JSON matching this exact structure:
       "narration": "Voiceover narrative or Lina/Train dialogue",
       "sfx": "Train steam whistle choo-choo and magical chime",
       "imagePrompt": "Detailed 3D prompt for image generator including Lina and Magic Train visual consistency",
-      "videoPrompt": "Motion description for AI video generator (Runway/Luma style)"
+      "videoPrompt": "Motion description for AI video generator (Runway/Luma/Google Flow style)"
     }
   ]
 }
@@ -342,7 +371,7 @@ Return ONLY valid JSON matching this exact structure:
                   </label>
                   <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <input type="checkbox" checked={checklist.videoClips} onChange={() => toggleChecklistItem('videoClips')} />
-                    Video Clips Rendered
+                    Google Flow Videos
                   </label>
                   <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <input type="checkbox" checked={checklist.editing} onChange={() => toggleChecklistItem('editing')} />
@@ -381,19 +410,45 @@ Return ONLY valid JSON matching this exact structure:
                       <button
                         onClick={() => renderFreeImage(generatedScript.thumbnailPrompt, 'thumb-img')}
                         className="btn-copy"
-                        style={{ backgroundColor: '#d97706', color: '#000000' }}
+                        disabled={renderingIndex === 'thumb-img' || (cooldowns['thumb-img'] > 0)}
+                        style={{ backgroundColor: cooldowns['thumb-img'] ? '#475569' : '#d97706', color: '#ffffff' }}
                       >
-                        {renderingIndex === 'thumb-img' ? 'Rendering...' : '✨ Render Thumbnail'}
+                        {renderingIndex === 'thumb-img'
+                          ? 'Rendering...'
+                          : cooldowns['thumb-img'] > 0
+                          ? `Wait ${cooldowns['thumb-img']}s`
+                          : '✨ Render'}
                       </button>
                       <button
                         onClick={() => copyToClipboard(generatedScript.thumbnailPrompt, 'thumb-btn')}
                         className="btn-copy"
                       >
-                        {copiedId === 'thumb-btn' ? 'Copied! ✅' : 'Copy'}
+                        {copiedId === 'thumb-btn' ? 'Copied! ✅' : 'Copy Prompt'}
                       </button>
                     </div>
                   </div>
                   <div className="prompt-box">{generatedScript.thumbnailPrompt}</div>
+
+                  {/* Free Backup Generators */}
+                  <div style={{ marginTop: '8px', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '10px', color: '#94a3b8' }}>Free External Generators:</span>
+                    <a
+                      href="https://www.bing.com/images/create"
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ fontSize: '10px', color: '#fbbf24', textDecoration: 'underline' }}
+                    >
+                      Bing Designer
+                    </a>
+                    <a
+                      href="https://black-forest-labs-flux-1-schnell.hf.space"
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ fontSize: '10px', color: '#fbbf24', textDecoration: 'underline' }}
+                    >
+                      Hugging Face Flux
+                    </a>
+                  </div>
 
                   {renderedImages['thumb-img'] && (
                     <div style={{ marginTop: '10px' }}>
@@ -430,11 +485,14 @@ Return ONLY valid JSON matching this exact structure:
 
             {/* Scenes */}
             <h3 style={{ fontSize: '15px', color: '#ffffff', marginBottom: '12px', paddingLeft: '4px' }}>
-              🎬 Scene Breakdown & AI Generation Prompts
+              🎬 Scene Breakdown & AI Video Generation
             </h3>
 
             {generatedScript.scenes.map((scene: any, idx: number) => {
               const sceneId = `scene-${idx}`;
+              const activeCooldown = cooldowns[sceneId] || 0;
+              const flowPrompt = buildGoogleFlowPrompt(scene.videoPrompt, scene.narration, scene.sfx);
+
               return (
                 <div key={scene.sceneNumber || idx} className="card">
                   <div
@@ -448,9 +506,17 @@ Return ONLY valid JSON matching this exact structure:
                       <button
                         onClick={() => renderFreeImage(scene.imagePrompt, sceneId)}
                         className="btn-copy"
-                        style={{ backgroundColor: '#d97706', color: '#000000' }}
+                        disabled={renderingIndex === sceneId || activeCooldown > 0}
+                        style={{
+                          backgroundColor: activeCooldown > 0 ? '#475569' : '#d97706',
+                          color: '#ffffff'
+                        }}
                       >
-                        {renderingIndex === sceneId ? 'Rendering...' : '✨ Render 3D Image'}
+                        {renderingIndex === sceneId
+                          ? 'Rendering...'
+                          : activeCooldown > 0
+                          ? `Wait ${activeCooldown}s`
+                          : '✨ Render 3D Image'}
                       </button>
                       <button
                         onClick={() => copyToClipboard(scene.imagePrompt, `img-${idx}`)}
@@ -502,10 +568,43 @@ Return ONLY valid JSON matching this exact structure:
                     <div className="prompt-box">{scene.imagePrompt}</div>
                   </div>
 
-                  <div>
-                    <span className="label">Video Motion Prompt (8-sec clip)</span>
-                    <div className="narration-box" style={{ fontStyle: 'normal' }}>
-                      {scene.videoPrompt}
+                  {/* Google Flow (Veo 3.1) Dedicated Card */}
+                  <div className="card-inner" style={{ borderColor: '#3b82f6', backgroundColor: '#090d16' }}>
+                    <div className="flex-between" style={{ marginBottom: '6px' }}>
+                      <span className="label" style={{ color: '#60a5fa', margin: 0 }}>
+                        🎥 Google Flow (Veo 3.1) Video Exporter
+                      </span>
+                      <button
+                        onClick={() => copyToClipboard(flowPrompt, `flow-${idx}`)}
+                        className="btn-copy"
+                        style={{ backgroundColor: '#1d4ed8', color: '#ffffff' }}
+                      >
+                        {copiedId === `flow-${idx}` ? 'Copied! ✅' : 'Copy Veo Prompt'}
+                      </button>
+                    </div>
+                    <div className="prompt-box" style={{ color: '#93c5fd', fontSize: '11px' }}>
+                      {flowPrompt}
+                    </div>
+
+                    <div style={{ marginTop: '10px' }}>
+                      <a
+                        href="https://labs.google/fx/tools/flow"
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          display: 'block',
+                          textAlign: 'center',
+                          backgroundColor: '#2563eb',
+                          color: '#ffffff',
+                          padding: '10px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          textDecoration: 'none'
+                        }}
+                      >
+                        🎬 Open Google Flow (50 Free Daily Clips)
+                      </a>
                     </div>
                   </div>
                 </div>
