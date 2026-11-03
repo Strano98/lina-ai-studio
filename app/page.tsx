@@ -18,6 +18,19 @@ export default function StudioDashboard() {
   const [showSaved, setShowSaved] = useState(false);
   const [error, setError] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [renderedImages, setRenderedImages] = useState<{ [key: string]: string }>({});
+  const [renderingIndex, setRenderingIndex] = useState<string | null>(null);
+
+  // Production Checklist State
+  const [checklist, setChecklist] = useState({
+    script: true,
+    voiceover: false,
+    images: false,
+    videoClips: false,
+    editing: false,
+    thumbnail: false,
+    uploaded: false
+  });
 
   useEffect(() => {
     const savedKey = localStorage.getItem('LINA_GEMINI_API_KEY');
@@ -62,6 +75,30 @@ export default function StudioDashboard() {
     localStorage.setItem('LINA_SAVED_PROJECTS', JSON.stringify(updated));
   };
 
+  const toggleChecklistItem = (key: keyof typeof checklist) => {
+    setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const renderFreeImage = (promptText: string, id: string) => {
+    setRenderingIndex(id);
+    // Pollinations AI - 100% Free image generation engine
+    const encodedPrompt = encodeURIComponent(
+      `${promptText}, 3d preschool animation, 8k render, linear lighting, highly detailed`
+    );
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1280&height=720&nologo=true&seed=${Math.floor(Math.random() * 1000)}`;
+
+    const img = new Image();
+    img.src = imageUrl;
+    img.onload = () => {
+      setRenderedImages((prev) => ({ ...prev, [id]: imageUrl }));
+      setRenderingIndex(null);
+    };
+    img.onerror = () => {
+      setRenderingIndex(null);
+      alert('Error rendering image. Please try again.');
+    };
+  };
+
   const generateProductionPlan = async () => {
     if (!topic.trim()) {
       setError('Please enter a video topic or lesson concept.');
@@ -71,6 +108,16 @@ export default function StudioDashboard() {
     setLoading(true);
     setError('');
     setGeneratedScript(null);
+    setRenderedImages({});
+    setChecklist({
+      script: true,
+      voiceover: false,
+      images: false,
+      videoClips: false,
+      editing: false,
+      thumbnail: false,
+      uploaded: false
+    });
 
     const systemPrompt = `
 You are the lead showrunner for "Lina's Magic Land", a 3D animated educational YouTube series for preschoolers.
@@ -88,10 +135,15 @@ Return ONLY valid JSON matching this exact structure:
     "description": "Engaging description with hashtags",
     "tags": ["Lina Magic Land", "Preschool Learning", "3D Animation", "Educational Video"]
   },
+  "audioPlan": {
+    "bgMusic": "Upbeat cheerful orchestral preschool melody with xylophone and bells",
+    "overallSFX": "Train whistle, magic sparkle chimes, happy giggles"
+  },
   "scenes": [
     {
       "sceneNumber": 1,
       "narration": "Voiceover narrative or Lina/Train dialogue",
+      "sfx": "Train steam whistle choo-choo and magical chime",
       "imagePrompt": "Detailed 3D prompt for image generator including Lina and Magic Train visual consistency",
       "videoPrompt": "Motion description for AI video generator (Runway/Luma style)"
     }
@@ -111,16 +163,22 @@ Return ONLY valid JSON matching this exact structure:
               description: `Join Lina and her cute Magic Train as they explore ${topic}! Fun 3D animated learning for preschoolers. #LinasMagicLand #Preschool`,
               tags: ['Lina Magic Land', 'Preschool Learning', topic, '3D Animation']
             },
+            audioPlan: {
+              bgMusic: "Upbeat bouncy playful acoustic guitar & xylophone preschool track",
+              overallSFX: "Steam whistle choo-choo, sparkling magic wand sound, popping bubbles"
+            },
             scenes: [
               {
                 sceneNumber: 1,
                 narration: "Hello friends! Welcome to Lina's Magic Land! Look, the Magic Train is here!",
+                sfx: "Cheerful train steam whistle 'choo-choo!' and sparkling magic sound",
                 imagePrompt: `3D preschool animation shot of Lina, a 5-year-old girl with wavy dark-brown hair, yellow hair clip, turquoise overalls, waving excitedly next to a colorful friendly Magic Train with glowing wheels, wide angle, bright sunny magical garden, 16:9 aspect ratio.`,
                 videoPrompt: "Lina waves cheerfully as the Magic Train rolls up slowly with puffing star-shaped steam, smooth 3D animation, 8 seconds."
               },
               {
                 sceneNumber: 2,
                 narration: `Today we are going on a journey to learn all about ${topic}! Choo choo!`,
+                sfx: "Train rolling on tracks sound with happy xylophone chime",
                 imagePrompt: `3D preschool animation, Lina riding inside the cheerful open carriage of the Magic Train, pointing happily towards a colorful landscape showing ${topic}, cinematic lighting, 16:9 aspect ratio.`,
                 videoPrompt: "Camera pans alongside the Magic Train moving through a vibrant rainbow track, Lina giggling and clapping, 8 seconds."
               }
@@ -252,7 +310,7 @@ Return ONLY valid JSON matching this exact structure:
         {/* Generated Episode Output */}
         {generatedScript && (
           <div>
-            {/* Overview */}
+            {/* Episode Overview & Audio Plan */}
             <div className="card">
               <span className="label" style={{ color: '#fbbf24' }}>
                 Episode Workspace
@@ -264,21 +322,88 @@ Return ONLY valid JSON matching this exact structure:
                 <strong>Educational Goal:</strong> {generatedScript.learningGoal}
               </p>
 
-              {/* Thumbnail Prompt */}
+              {/* Interactive Production Checklist */}
+              <div className="card-inner" style={{ borderColor: '#334155' }}>
+                <span className="label" style={{ color: '#fbbf24', marginBottom: '8px' }}>
+                  ✅ Mobile Production Checklist
+                </span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <input type="checkbox" checked={checklist.script} onChange={() => toggleChecklistItem('script')} />
+                    Script Ready
+                  </label>
+                  <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <input type="checkbox" checked={checklist.voiceover} onChange={() => toggleChecklistItem('voiceover')} />
+                    Voiceover Done
+                  </label>
+                  <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <input type="checkbox" checked={checklist.images} onChange={() => toggleChecklistItem('images')} />
+                    3D Images Done
+                  </label>
+                  <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <input type="checkbox" checked={checklist.videoClips} onChange={() => toggleChecklistItem('videoClips')} />
+                    Video Clips Rendered
+                  </label>
+                  <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <input type="checkbox" checked={checklist.editing} onChange={() => toggleChecklistItem('editing')} />
+                    CapCut Assembly
+                  </label>
+                  <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <input type="checkbox" checked={checklist.thumbnail} onChange={() => toggleChecklistItem('thumbnail')} />
+                    Thumbnail Created
+                  </label>
+                </div>
+              </div>
+
+              {/* Audio & Music Recommendations */}
+              {generatedScript.audioPlan && (
+                <div className="card-inner">
+                  <span className="label" style={{ color: '#fbbf24' }}>
+                    🎵 Sound & Music Direction
+                  </span>
+                  <p style={{ fontSize: '12px', color: '#e2e8f0', marginBottom: '4px' }}>
+                    <strong>Background Music:</strong> {generatedScript.audioPlan.bgMusic}
+                  </p>
+                  <p style={{ fontSize: '12px', color: '#cbd5e1' }}>
+                    <strong>Key Sound Effects:</strong> {generatedScript.audioPlan.overallSFX}
+                  </p>
+                </div>
+              )}
+
+              {/* Thumbnail Prompt & Free Renderer */}
               {generatedScript.thumbnailPrompt && (
                 <div className="card-inner">
                   <div className="flex-between" style={{ marginBottom: '6px' }}>
                     <span className="label" style={{ color: '#fbbf24', margin: 0 }}>
                       🖼️ 3D Thumbnail Prompt
                     </span>
-                    <button
-                      onClick={() => copyToClipboard(generatedScript.thumbnailPrompt, 'thumb-btn')}
-                      className="btn-copy"
-                    >
-                      {copiedId === 'thumb-btn' ? 'Copied! ✅' : 'Copy'}
-                    </button>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button
+                        onClick={() => renderFreeImage(generatedScript.thumbnailPrompt, 'thumb-img')}
+                        className="btn-copy"
+                        style={{ backgroundColor: '#d97706', color: '#000000' }}
+                      >
+                        {renderingIndex === 'thumb-img' ? 'Rendering...' : '✨ Render Thumbnail'}
+                      </button>
+                      <button
+                        onClick={() => copyToClipboard(generatedScript.thumbnailPrompt, 'thumb-btn')}
+                        className="btn-copy"
+                      >
+                        {copiedId === 'thumb-btn' ? 'Copied! ✅' : 'Copy'}
+                      </button>
+                    </div>
                   </div>
                   <div className="prompt-box">{generatedScript.thumbnailPrompt}</div>
+
+                  {renderedImages['thumb-img'] && (
+                    <div style={{ marginTop: '10px' }}>
+                      <img
+                        src={renderedImages['thumb-img']}
+                        alt="3D Thumbnail Preview"
+                        style={{ width: '100%', borderRadius: '10px', border: '1px solid #334155' }}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -308,49 +433,84 @@ Return ONLY valid JSON matching this exact structure:
               🎬 Scene Breakdown & AI Generation Prompts
             </h3>
 
-            {generatedScript.scenes.map((scene: any, idx: number) => (
-              <div key={scene.sceneNumber || idx} className="card">
-                <div className="flex-between" style={{ borderBottom: '1px solid #1f2937', paddingBottom: '8px', marginBottom: '12px' }}>
-                  <span className="label" style={{ color: '#fbbf24', margin: 0 }}>
-                    Scene {scene.sceneNumber || idx + 1}
-                  </span>
-                  <button
-                    onClick={() => copyToClipboard(scene.imagePrompt, `img-${idx}`)}
-                    className="btn-copy"
+            {generatedScript.scenes.map((scene: any, idx: number) => {
+              const sceneId = `scene-${idx}`;
+              return (
+                <div key={scene.sceneNumber || idx} className="card">
+                  <div
+                    className="flex-between"
+                    style={{ borderBottom: '1px solid #1f2937', paddingBottom: '8px', marginBottom: '12px' }}
                   >
-                    {copiedId === `img-${idx}` ? 'Copied! ✅' : 'Copy Image Prompt'}
-                  </button>
-                </div>
-
-                <div style={{ marginBottom: '10px' }}>
-                  <div className="flex-between" style={{ marginBottom: '4px' }}>
-                    <span className="label" style={{ margin: 0 }}>
-                      Dialogue / Voiceover
+                    <span className="label" style={{ color: '#fbbf24', margin: 0 }}>
+                      Scene {scene.sceneNumber || idx + 1}
                     </span>
-                    <button
-                      onClick={() => copyToClipboard(scene.narration, `voice-${idx}`)}
-                      className="btn-copy"
-                      style={{ fontSize: '10px', padding: '2px 6px' }}
-                    >
-                      {copiedId === `voice-${idx}` ? 'Copied! ✅' : 'Copy Script'}
-                    </button>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        onClick={() => renderFreeImage(scene.imagePrompt, sceneId)}
+                        className="btn-copy"
+                        style={{ backgroundColor: '#d97706', color: '#000000' }}
+                      >
+                        {renderingIndex === sceneId ? 'Rendering...' : '✨ Render 3D Image'}
+                      </button>
+                      <button
+                        onClick={() => copyToClipboard(scene.imagePrompt, `img-${idx}`)}
+                        className="btn-copy"
+                      >
+                        {copiedId === `img-${idx}` ? 'Copied! ✅' : 'Copy Prompt'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="narration-box">"{scene.narration}"</div>
-                </div>
 
-                <div style={{ marginBottom: '10px' }}>
-                  <span className="label">3D Image Generator Prompt</span>
-                  <div className="prompt-box">{scene.imagePrompt}</div>
-                </div>
+                  {/* Rendered Image Output */}
+                  {renderedImages[sceneId] && (
+                    <div style={{ marginBottom: '12px' }}>
+                      <img
+                        src={renderedImages[sceneId]}
+                        alt={`Scene ${scene.sceneNumber}`}
+                        style={{ width: '100%', borderRadius: '10px', border: '1px solid #334155' }}
+                      />
+                    </div>
+                  )}
 
-                <div>
-                  <span className="label">Video Motion Prompt (8-sec clip)</span>
-                  <div className="narration-box" style={{ fontStyle: 'normal' }}>
-                    {scene.videoPrompt}
+                  <div style={{ marginBottom: '10px' }}>
+                    <div className="flex-between" style={{ marginBottom: '4px' }}>
+                      <span className="label" style={{ margin: 0 }}>
+                        Dialogue / Voiceover
+                      </span>
+                      <button
+                        onClick={() => copyToClipboard(scene.narration, `voice-${idx}`)}
+                        className="btn-copy"
+                        style={{ fontSize: '10px', padding: '2px 6px' }}
+                      >
+                        {copiedId === `voice-${idx}` ? 'Copied! ✅' : 'Copy Script'}
+                      </button>
+                    </div>
+                    <div className="narration-box">"{scene.narration}"</div>
+                  </div>
+
+                  {scene.sfx && (
+                    <div style={{ marginBottom: '10px' }}>
+                      <span className="label">Scene Sound Effects (SFX)</span>
+                      <div className="narration-box" style={{ fontStyle: 'normal', color: '#fbbf24' }}>
+                        🔊 {scene.sfx}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ marginBottom: '10px' }}>
+                    <span className="label">3D Image Generator Prompt</span>
+                    <div className="prompt-box">{scene.imagePrompt}</div>
+                  </div>
+
+                  <div>
+                    <span className="label">Video Motion Prompt (8-sec clip)</span>
+                    <div className="narration-box" style={{ fontStyle: 'normal' }}>
+                      {scene.videoPrompt}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
