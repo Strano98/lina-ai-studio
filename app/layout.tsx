@@ -1,12 +1,24 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+import type { Metadata } from "next";
+import "./globals.css";
 
-:root {
-  color-scheme: dark;
-}
+export const metadata: Metadata = {
+  title: "Lina AI Studio - Production Hub",
+  description: "AI YouTube Production Studio for Lina's Magic Land",
+};
 
-body {
-  background-color: #020617 !important;
-  color: #f8fafc !important;
-  font-family: 'Plus Jakarta Sans', sans-serif !important;
-  min-height: 100vh;
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+      </head>
+      <body>
+        {children}
+      </body>
+    </html>
+  );
 }
