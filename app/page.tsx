@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 
-// Character System Prompt Specifications
 const LINA_CHARACTER_PROMPT = `
 Character 1: Lina (5-year-old animated girl, round expressive face, big sparkling brown eyes, short wavy dark-brown hair, yellow hair clip, yellow top, turquoise overalls, colorful sneakers).
 Character 2: Magic Train (Cute, colorful, toy-like train with a friendly expressive face, glowing magical details, cheerful carriages).
@@ -15,12 +14,23 @@ export default function StudioDashboard() {
   const [topic, setTopic] = useState('');
   const [loading, setLoading] = useState(false);
   const [generatedScript, setGeneratedScript] = useState<any>(null);
+  const [savedProjects, setSavedProjects] = useState<any[]>([]);
+  const [showSaved, setShowSaved] = useState(false);
   const [error, setError] = useState('');
-  const [copiedIndex, setCopiedIndex] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     const savedKey = localStorage.getItem('LINA_GEMINI_API_KEY');
     if (savedKey) setApiKey(savedKey);
+
+    const storedProjects = localStorage.getItem('LINA_SAVED_PROJECTS');
+    if (storedProjects) {
+      try {
+        setSavedProjects(JSON.parse(storedProjects));
+      } catch (e) {
+        console.error('Error loading projects', e);
+      }
+    }
   }, []);
 
   const saveApiKey = (key: string) => {
@@ -31,8 +41,25 @@ export default function StudioDashboard() {
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
-    setCopiedIndex(id);
-    setTimeout(() => setCopiedIndex(null), 2000);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const saveCurrentProject = (projectData: any) => {
+    const newProject = {
+      id: Date.now().toString(),
+      createdAt: new Date().toLocaleDateString(),
+      ...projectData
+    };
+    const updated = [newProject, ...savedProjects];
+    setSavedProjects(updated);
+    localStorage.setItem('LINA_SAVED_PROJECTS', JSON.stringify(updated));
+  };
+
+  const deleteProject = (id: string) => {
+    const updated = savedProjects.filter((p) => p.id !== id);
+    setSavedProjects(updated);
+    localStorage.setItem('LINA_SAVED_PROJECTS', JSON.stringify(updated));
   };
 
   const generateProductionPlan = async () => {
@@ -49,12 +76,13 @@ export default function StudioDashboard() {
 You are the lead showrunner for "Lina's Magic Land", a 3D animated educational YouTube series for preschoolers.
 ${LINA_CHARACTER_PROMPT}
 
-Create a complete 3-minute episode script package based on the topic: "${topic}".
+Create a complete production package based on topic: "${topic}".
 
 Return ONLY valid JSON matching this exact structure:
 {
   "title": "Episode Title",
   "learningGoal": "Core educational message",
+  "thumbnailPrompt": "3D YouTube thumbnail prompt featuring Lina smiling next to Magic Train with high visual contrast",
   "seo": {
     "title": "Optimized YouTube Title",
     "description": "Engaging description with hashtags",
@@ -65,7 +93,7 @@ Return ONLY valid JSON matching this exact structure:
       "sceneNumber": 1,
       "narration": "Voiceover narrative or Lina/Train dialogue",
       "imagePrompt": "Detailed 3D prompt for image generator including Lina and Magic Train visual consistency",
-      "videoPrompt": "Motion description for AI video generator (Runway/Luma/SORA style)"
+      "videoPrompt": "Motion description for AI video generator (Runway/Luma style)"
     }
   ]
 }
@@ -73,14 +101,14 @@ Return ONLY valid JSON matching this exact structure:
 
     try {
       if (!apiKey) {
-        // Built-in offline demo output if key is not yet configured
         setTimeout(() => {
-          setGeneratedScript({
+          const fallbackData = {
             title: `Lina & The Magic Train: ${topic}`,
             learningGoal: `Learning about ${topic} through magical play.`,
+            thumbnailPrompt: `3D preschool animation thumbnail, Lina with dark wavy hair, yellow hair clip, turquoise overalls, hugging the cute smiling Magic Train, vibrant rainbow background, bright lighting, high detail, 16:9 aspect ratio.`,
             seo: {
               title: `Lina's Magic Land - ${topic} | 3D Preschool Learning`,
-              description: `Join Lina and her cute Magic Train as they explore ${topic}! Fun 3D animated learning for toddlers & preschoolers. #LinasMagicLand #Preschool`,
+              description: `Join Lina and her cute Magic Train as they explore ${topic}! Fun 3D animated learning for preschoolers. #LinasMagicLand #Preschool`,
               tags: ['Lina Magic Land', 'Preschool Learning', topic, '3D Animation']
             },
             scenes: [
@@ -97,7 +125,9 @@ Return ONLY valid JSON matching this exact structure:
                 videoPrompt: "Camera pans alongside the Magic Train moving through a vibrant rainbow track, Lina giggling and clapping, 8 seconds."
               }
             ]
-          });
+          };
+          setGeneratedScript(fallbackData);
+          saveCurrentProject(fallbackData);
           setLoading(false);
         }, 1000);
         return;
@@ -122,6 +152,7 @@ Return ONLY valid JSON matching this exact structure:
 
       const parsed = JSON.parse(rawText);
       setGeneratedScript(parsed);
+      saveCurrentProject(parsed);
     } catch (err: any) {
       setError(err.message || 'Error generating script. Check your API key or connection.');
     } finally {
@@ -141,20 +172,28 @@ Return ONLY valid JSON matching this exact structure:
             Production Hub for <span className="text-slate-200 font-semibold">Lina's Magic Land</span>
           </p>
         </div>
-        <button
-          onClick={() => setShowSettings(!showSettings)}
-          className="px-4 py-2 text-xs font-semibold bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl transition"
-        >
-          {apiKey ? '⚙️ Gemini API Saved' : '🔑 Add Free Gemini API Key'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowSaved(!showSaved)}
+            className="px-3 py-2 text-xs font-semibold bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl transition text-slate-300"
+          >
+            📁 Projects ({savedProjects.length})
+          </button>
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="px-3 py-2 text-xs font-semibold bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl transition text-amber-400"
+          >
+            {apiKey ? '⚙️ Gemini Saved' : '🔑 Add Free Key'}
+          </button>
+        </div>
       </header>
 
-      {/* Settings Modal / Drawer */}
+      {/* Gemini Settings Drawer */}
       {showSettings && (
         <div className="max-w-4xl mx-auto my-4 p-4 bg-slate-900 border border-amber-500/30 rounded-2xl shadow-xl">
-          <h3 className="text-sm font-bold text-amber-400 mb-2">Google Gemini API Configuration</h3>
+          <h3 className="text-sm font-bold text-amber-400 mb-2">Google Gemini API Setup</h3>
           <p className="text-xs text-slate-300 mb-3">
-            Get your 100% free key from{' '}
+            Get your 100% free API key from{' '}
             <a
               href="https://aistudio.google.com/app/apikey"
               target="_blank"
@@ -163,12 +202,12 @@ Return ONLY valid JSON matching this exact structure:
             >
               Google AI Studio
             </a>
-            . Your key is saved locally in your phone's browser only.
+            . Stored locally in your phone browser.
           </p>
           <div className="flex gap-2">
             <input
               type="password"
-              placeholder="Paste Gemini API Key here..."
+              placeholder="Paste Gemini Key here..."
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
@@ -183,13 +222,48 @@ Return ONLY valid JSON matching this exact structure:
         </div>
       )}
 
-      {/* Main Studio Workstation */}
+      {/* Saved Projects Drawer */}
+      {showSaved && (
+        <div className="max-w-4xl mx-auto my-4 p-4 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-3">
+          <h3 className="text-sm font-bold text-amber-400">📁 Saved Episodes on Phone</h3>
+          {savedProjects.length === 0 ? (
+            <p className="text-xs text-slate-400">No saved projects yet. Generate an episode below!</p>
+          ) : (
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              {savedProjects.map((p) => (
+                <div key={p.id} className="flex justify-between items-center p-3 bg-slate-950 rounded-xl border border-slate-800/80">
+                  <div>
+                    <p className="text-xs font-bold text-white">{p.title}</p>
+                    <p className="text-[10px] text-slate-400">Saved on {p.createdAt}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setGeneratedScript(p)}
+                      className="px-2.5 py-1 text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg hover:bg-amber-500/30"
+                    >
+                      Load
+                    </button>
+                    <button
+                      onClick={() => deleteProject(p.id)}
+                      className="px-2.5 py-1 text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500/20"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Studio Workstation */}
       <main className="max-w-4xl mx-auto mt-6 space-y-6">
         {/* Creator Input Section */}
         <section className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
           <h2 className="text-lg font-bold text-white mb-1">1. AI Episode & Script Generator</h2>
           <p className="text-xs text-slate-400 mb-4">
-            Enter an educational topic (e.g., "Counting 1 to 5", "Colors of the Rainbow", "Healthy Fruits").
+            Enter an educational topic (e.g., "Counting 1 to 5", "Colors of Rainbow", "Healthy Vegetables").
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3">
@@ -218,7 +292,7 @@ Return ONLY valid JSON matching this exact structure:
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
               <div>
                 <span className="text-[10px] font-bold tracking-wider text-amber-400 uppercase bg-amber-400/10 px-2 py-1 rounded border border-amber-500/20">
-                  Episode Concept
+                  Episode Workspace
                 </span>
                 <h3 className="text-xl font-extrabold text-white mt-2">{generatedScript.title}</h3>
                 <p className="text-xs text-slate-300 mt-1">
@@ -226,8 +300,27 @@ Return ONLY valid JSON matching this exact structure:
                 </p>
               </div>
 
+              {/* YouTube Thumbnail Prompt */}
+              {generatedScript.thumbnailPrompt && (
+                <div className="bg-slate-950 rounded-xl p-4 border border-slate-800/80 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">🖼️ 3D Thumbnail Prompt</h4>
+                    <button
+                      onClick={() => copyToClipboard(generatedScript.thumbnailPrompt, 'thumb-btn')}
+                      className="text-[10px] bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg text-slate-200 border border-slate-700"
+                    >
+                      {copiedId === 'thumb-btn' ? 'Copied! ✅' : 'Copy Prompt'}
+                    </button>
+                  </div>
+                  <p className="text-xs font-mono text-amber-200 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 select-all">
+                    {generatedScript.thumbnailPrompt}
+                  </p>
+                </div>
+              )}
+
+              {/* YouTube Metadata */}
               <div className="bg-slate-950 rounded-xl p-4 border border-slate-800/80 space-y-2">
-                <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">YouTube Metadata & SEO</h4>
+                <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">YouTube SEO Metadata</h4>
                 <p className="text-xs text-slate-200">
                   <span className="font-semibold text-slate-400">Title:</span> {generatedScript.seo.title}
                 </p>
@@ -247,7 +340,7 @@ Return ONLY valid JSON matching this exact structure:
             {/* Scene Prompt Breakdown */}
             <div className="space-y-4">
               <h3 className="text-md font-bold text-white flex items-center gap-2">
-                🎬 Scene-by-Scene Visual & Dialogue Breakdown
+                🎬 Scene Breakdown & AI Generation Prompts
               </h3>
 
               {generatedScript.scenes.map((scene: any, idx: number) => (
@@ -260,12 +353,20 @@ Return ONLY valid JSON matching this exact structure:
                       onClick={() => copyToClipboard(scene.imagePrompt, `img-${idx}`)}
                       className="text-[10px] bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-lg text-slate-200 border border-slate-700 transition"
                     >
-                      {copiedIndex === `img-${idx}` ? 'Copied! ✅' : 'Copy 3D Image Prompt'}
+                      {copiedId === `img-${idx}` ? 'Copied! ✅' : 'Copy 3D Image Prompt'}
                     </button>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-semibold text-slate-400 uppercase">Dialogue / Voiceover</label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-[10px] font-semibold text-slate-400 uppercase">Dialogue / Voiceover</label>
+                      <button
+                        onClick={() => copyToClipboard(scene.narration, `voice-${idx}`)}
+                        className="text-[9px] text-amber-400 hover:underline"
+                      >
+                        {copiedId === `voice-${idx}` ? 'Copied! ✅' : 'Copy Voiceover Text'}
+                      </button>
+                    </div>
                     <p className="text-xs text-slate-200 italic bg-slate-950 p-2.5 rounded-xl border border-slate-800">
                       "{scene.narration}"
                     </p>
