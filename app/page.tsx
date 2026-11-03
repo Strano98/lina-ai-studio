@@ -28,7 +28,7 @@ export default function StudioDashboard() {
       try {
         setSavedProjects(JSON.parse(storedProjects));
       } catch (e) {
-        console.error('Error loading projects', e);
+        console.error('Error loading saved projects', e);
       }
     }
   }, []);
@@ -161,175 +161,141 @@ Return ONLY valid JSON matching this exact structure:
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans">
-      {/* Header */}
-      <header className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-800">
+    <div className="studio-container">
+      {/* Header Bar */}
+      <header className="studio-header">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-amber-400">
-            Lina AI Studio 🚂✨
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400">
-            Production Hub for <span className="text-slate-200 font-semibold">Lina's Magic Land</span>
-          </p>
+          <h1 className="studio-title">Lina AI Studio 🚂✨</h1>
+          <p className="studio-subtitle">Production Hub for Lina's Magic Land</p>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowSaved(!showSaved)}
-            className="px-3 py-2 text-xs font-semibold bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl transition text-slate-300"
-          >
+        <div className="btn-group">
+          <button onClick={() => setShowSaved(!showSaved)} className="btn-secondary">
             📁 Projects ({savedProjects.length})
           </button>
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="px-3 py-2 text-xs font-semibold bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl transition text-amber-400"
-          >
+          <button onClick={() => setShowSettings(!showSettings)} className="btn-secondary" style={{ color: '#fbbf24' }}>
             {apiKey ? '⚙️ Gemini Saved' : '🔑 Add Free Key'}
           </button>
         </div>
       </header>
 
-      {/* Gemini Settings Drawer */}
+      {/* Settings Drawer */}
       {showSettings && (
-        <div className="max-w-4xl mx-auto my-4 p-4 bg-slate-900 border border-amber-500/30 rounded-2xl shadow-xl">
-          <h3 className="text-sm font-bold text-amber-400 mb-2">Google Gemini API Setup</h3>
-          <p className="text-xs text-slate-300 mb-3">
-            Get your 100% free API key from{' '}
-            <a
-              href="https://aistudio.google.com/app/apikey"
-              target="_blank"
-              rel="noreferrer"
-              className="text-amber-400 underline font-semibold"
-            >
+        <div className="card">
+          <h3 style={{ color: '#fbbf24', marginBottom: '8px' }}>Google Gemini API Setup</h3>
+          <p style={{ fontSize: '12px', color: '#cbd5e1', marginBottom: '12px' }}>
+            Get your free key from{' '}
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" style={{ color: '#fbbf24' }}>
               Google AI Studio
             </a>
-            . Stored locally in your phone browser.
+            . Saved on your phone only.
           </p>
-          <div className="flex gap-2">
-            <input
-              type="password"
-              placeholder="Paste Gemini Key here..."
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
-            />
-            <button
-              onClick={() => saveApiKey(apiKey)}
-              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl transition"
-            >
-              Save Key
-            </button>
-          </div>
+          <input
+            type="password"
+            placeholder="Paste Gemini Key here..."
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            className="input-field"
+          />
+          <button onClick={() => saveApiKey(apiKey)} className="btn-primary">
+            Save Key
+          </button>
         </div>
       )}
 
       {/* Saved Projects Drawer */}
       {showSaved && (
-        <div className="max-w-4xl mx-auto my-4 p-4 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl space-y-3">
-          <h3 className="text-sm font-bold text-amber-400">📁 Saved Episodes on Phone</h3>
+        <div className="card">
+          <h3 style={{ color: '#fbbf24', marginBottom: '12px' }}>📁 Saved Episodes on Phone</h3>
           {savedProjects.length === 0 ? (
-            <p className="text-xs text-slate-400">No saved projects yet. Generate an episode below!</p>
+            <p style={{ fontSize: '12px', color: '#94a3b8' }}>No saved projects yet. Generate an episode below!</p>
           ) : (
-            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-              {savedProjects.map((p) => (
-                <div key={p.id} className="flex justify-between items-center p-3 bg-slate-950 rounded-xl border border-slate-800/80">
-                  <div>
-                    <p className="text-xs font-bold text-white">{p.title}</p>
-                    <p className="text-[10px] text-slate-400">Saved on {p.createdAt}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setGeneratedScript(p)}
-                      className="px-2.5 py-1 text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg hover:bg-amber-500/30"
-                    >
-                      Load
-                    </button>
-                    <button
-                      onClick={() => deleteProject(p.id)}
-                      className="px-2.5 py-1 text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500/20"
-                    >
-                      Delete
-                    </button>
-                  </div>
+            savedProjects.map((p) => (
+              <div key={p.id} className="card-inner flex-between" style={{ marginBottom: '8px' }}>
+                <div>
+                  <p style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>{p.title}</p>
+                  <p style={{ fontSize: '10px', color: '#94a3b8' }}>Saved on {p.createdAt}</p>
                 </div>
-              ))}
-            </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button onClick={() => setGeneratedScript(p)} className="btn-copy">
+                    Load
+                  </button>
+                  <button onClick={() => deleteProject(p.id)} className="btn-copy" style={{ color: '#f87171' }}>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}
 
-      {/* Studio Workstation */}
-      <main className="max-w-4xl mx-auto mt-6 space-y-6">
-        {/* Creator Input Section */}
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-          <h2 className="text-lg font-bold text-white mb-1">1. AI Episode & Script Generator</h2>
-          <p className="text-xs text-slate-400 mb-4">
+      {/* Main Form */}
+      <main>
+        <section className="card">
+          <h2 className="section-title">1. AI Episode & Script Generator</h2>
+          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px' }}>
             Enter an educational topic (e.g., "Counting 1 to 5", "Colors of Rainbow", "Healthy Vegetables").
           </p>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="text"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              placeholder="e.g., Learning Numbers with Magic Train"
-              className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-400"
-            />
-            <button
-              onClick={generateProductionPlan}
-              disabled={loading}
-              className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm rounded-xl transition disabled:opacity-50"
-            >
-              {loading ? 'Generating Episode...' : 'Generate Episode ✨'}
-            </button>
-          </div>
-          {error && <p className="text-xs text-red-400 mt-2">{error}</p>}
+          <input
+            type="text"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="e.g., Learning Numbers with Magic Train"
+            className="input-field"
+          />
+          <button onClick={generateProductionPlan} disabled={loading} className="btn-primary">
+            {loading ? 'Generating Episode...' : 'Generate Episode ✨'}
+          </button>
+          {error && <p style={{ fontSize: '12px', color: '#f87171', marginTop: '8px' }}>{error}</p>}
         </section>
 
-        {/* Output Section */}
+        {/* Generated Episode Output */}
         {generatedScript && (
-          <section className="space-y-6">
-            {/* Overview & Metadata */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
-              <div>
-                <span className="text-[10px] font-bold tracking-wider text-amber-400 uppercase bg-amber-400/10 px-2 py-1 rounded border border-amber-500/20">
-                  Episode Workspace
-                </span>
-                <h3 className="text-xl font-extrabold text-white mt-2">{generatedScript.title}</h3>
-                <p className="text-xs text-slate-300 mt-1">
-                  <span className="font-semibold text-slate-400">Educational Goal:</span> {generatedScript.learningGoal}
-                </p>
-              </div>
+          <div>
+            {/* Overview */}
+            <div className="card">
+              <span className="label" style={{ color: '#fbbf24' }}>
+                Episode Workspace
+              </span>
+              <h2 className="section-title" style={{ fontSize: '20px', marginTop: '4px' }}>
+                {generatedScript.title}
+              </h2>
+              <p style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '4px' }}>
+                <strong>Educational Goal:</strong> {generatedScript.learningGoal}
+              </p>
 
-              {/* YouTube Thumbnail Prompt */}
+              {/* Thumbnail Prompt */}
               {generatedScript.thumbnailPrompt && (
-                <div className="bg-slate-950 rounded-xl p-4 border border-slate-800/80 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">🖼️ 3D Thumbnail Prompt</h4>
+                <div className="card-inner">
+                  <div className="flex-between" style={{ marginBottom: '6px' }}>
+                    <span className="label" style={{ color: '#fbbf24', margin: 0 }}>
+                      🖼️ 3D Thumbnail Prompt
+                    </span>
                     <button
                       onClick={() => copyToClipboard(generatedScript.thumbnailPrompt, 'thumb-btn')}
-                      className="text-[10px] bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg text-slate-200 border border-slate-700"
+                      className="btn-copy"
                     >
-                      {copiedId === 'thumb-btn' ? 'Copied! ✅' : 'Copy Prompt'}
+                      {copiedId === 'thumb-btn' ? 'Copied! ✅' : 'Copy'}
                     </button>
                   </div>
-                  <p className="text-xs font-mono text-amber-200 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 select-all">
-                    {generatedScript.thumbnailPrompt}
-                  </p>
+                  <div className="prompt-box">{generatedScript.thumbnailPrompt}</div>
                 </div>
               )}
 
               {/* YouTube Metadata */}
-              <div className="bg-slate-950 rounded-xl p-4 border border-slate-800/80 space-y-2">
-                <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">YouTube SEO Metadata</h4>
-                <p className="text-xs text-slate-200">
-                  <span className="font-semibold text-slate-400">Title:</span> {generatedScript.seo.title}
+              <div className="card-inner">
+                <span className="label" style={{ color: '#fbbf24' }}>
+                  YouTube SEO Metadata
+                </span>
+                <p style={{ fontSize: '12px', color: '#e2e8f0', marginBottom: '4px' }}>
+                  <strong>Title:</strong> {generatedScript.seo.title}
                 </p>
-                <p className="text-xs text-slate-300">
-                  <span className="font-semibold text-slate-400">Description:</span> {generatedScript.seo.description}
+                <p style={{ fontSize: '12px', color: '#cbd5e1', marginBottom: '8px' }}>
+                  <strong>Description:</strong> {generatedScript.seo.description}
                 </p>
-                <div className="flex flex-wrap gap-1 mt-2">
+                <div>
                   {generatedScript.seo.tags.map((tag: string, idx: number) => (
-                    <span key={idx} className="text-[10px] bg-slate-900 text-amber-400 px-2.5 py-1 rounded-md border border-slate-800">
+                    <span key={idx} className="tag">
                       #{tag}
                     </span>
                   ))}
@@ -337,58 +303,55 @@ Return ONLY valid JSON matching this exact structure:
               </div>
             </div>
 
-            {/* Scene Prompt Breakdown */}
-            <div className="space-y-4">
-              <h3 className="text-md font-bold text-white flex items-center gap-2">
-                🎬 Scene Breakdown & AI Generation Prompts
-              </h3>
+            {/* Scenes */}
+            <h3 style={{ fontSize: '15px', color: '#ffffff', marginBottom: '12px', paddingLeft: '4px' }}>
+              🎬 Scene Breakdown & AI Generation Prompts
+            </h3>
 
-              {generatedScript.scenes.map((scene: any, idx: number) => (
-                <div key={scene.sceneNumber || idx} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                    <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                      Scene {scene.sceneNumber || idx + 1}
+            {generatedScript.scenes.map((scene: any, idx: number) => (
+              <div key={scene.sceneNumber || idx} className="card">
+                <div className="flex-between" style={{ borderBottom: '1px solid #1f2937', paddingBottom: '8px', marginBottom: '12px' }}>
+                  <span className="label" style={{ color: '#fbbf24', margin: 0 }}>
+                    Scene {scene.sceneNumber || idx + 1}
+                  </span>
+                  <button
+                    onClick={() => copyToClipboard(scene.imagePrompt, `img-${idx}`)}
+                    className="btn-copy"
+                  >
+                    {copiedId === `img-${idx}` ? 'Copied! ✅' : 'Copy Image Prompt'}
+                  </button>
+                </div>
+
+                <div style={{ marginBottom: '10px' }}>
+                  <div className="flex-between" style={{ marginBottom: '4px' }}>
+                    <span className="label" style={{ margin: 0 }}>
+                      Dialogue / Voiceover
                     </span>
                     <button
-                      onClick={() => copyToClipboard(scene.imagePrompt, `img-${idx}`)}
-                      className="text-[10px] bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-lg text-slate-200 border border-slate-700 transition"
+                      onClick={() => copyToClipboard(scene.narration, `voice-${idx}`)}
+                      className="btn-copy"
+                      style={{ fontSize: '10px', padding: '2px 6px' }}
                     >
-                      {copiedId === `img-${idx}` ? 'Copied! ✅' : 'Copy 3D Image Prompt'}
+                      {copiedId === `voice-${idx}` ? 'Copied! ✅' : 'Copy Script'}
                     </button>
                   </div>
+                  <div className="narration-box">"{scene.narration}"</div>
+                </div>
 
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <label className="text-[10px] font-semibold text-slate-400 uppercase">Dialogue / Voiceover</label>
-                      <button
-                        onClick={() => copyToClipboard(scene.narration, `voice-${idx}`)}
-                        className="text-[9px] text-amber-400 hover:underline"
-                      >
-                        {copiedId === `voice-${idx}` ? 'Copied! ✅' : 'Copy Voiceover Text'}
-                      </button>
-                    </div>
-                    <p className="text-xs text-slate-200 italic bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                      "{scene.narration}"
-                    </p>
-                  </div>
+                <div style={{ marginBottom: '10px' }}>
+                  <span className="label">3D Image Generator Prompt</span>
+                  <div className="prompt-box">{scene.imagePrompt}</div>
+                </div>
 
-                  <div>
-                    <label className="text-[10px] font-semibold text-slate-400 uppercase">3D Image Generator Prompt</label>
-                    <p className="text-xs font-mono bg-slate-950 p-2.5 rounded-xl text-amber-200 border border-slate-800 select-all">
-                      {scene.imagePrompt}
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-semibold text-slate-400 uppercase">Video Motion Prompt (8-sec clip)</label>
-                    <p className="text-xs text-slate-300 bg-slate-950 p-2.5 rounded-xl border border-slate-800">
-                      {scene.videoPrompt}
-                    </p>
+                <div>
+                  <span className="label">Video Motion Prompt (8-sec clip)</span>
+                  <div className="narration-box" style={{ fontStyle: 'normal' }}>
+                    {scene.videoPrompt}
                   </div>
                 </div>
-              ))}
-            </div>
-          </section>
+              </div>
+            ))}
+          </div>
         )}
       </main>
     </div>
