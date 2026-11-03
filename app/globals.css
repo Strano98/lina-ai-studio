@@ -1,37 +1,12 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
 
 :root {
   color-scheme: dark;
 }
 
-* {
-  box-sizing: border-box;
-}
-
 body {
-  margin: 0;
-  padding: 0;
-  background-color: #030712 !important;
+  background-color: #020617 !important;
   color: #f8fafc !important;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
   min-height: 100vh;
-}
-
-/* Standalone mobile control fallbacks */
-input[type="text"], input[type="password"] {
-  background-color: #0f172a;
-  border: 1px solid #334155;
-  color: #ffffff;
-  border-radius: 12px;
-  padding: 12px 14px;
-  font-size: 14px;
-}
-
-button {
-  border-style: none;
-  border-radius: 12px;
-  font-weight: 700;
-  cursor: pointer;
 }
