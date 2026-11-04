@@ -27,7 +27,7 @@ export default function StudioDashboard() {
   const [renderingIndex, setRenderingIndex] = useState<string | null>(null);
   const [cooldowns, setCooldowns] = useState<{ [key: string]: number }>({});
 
-  // Mobile Production Checklist (70-Second Omni Flash Workflow)
+  // Mobile Production Checklist (3-5 Minute Workflow)
   const [checklist, setChecklist] = useState({
     script: true,
     omniFlashClips: false,
@@ -112,7 +112,7 @@ export default function StudioDashboard() {
     setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Generate SRT Subtitle File
+  // Dynamic SRT Subtitle Exporter for 3-5 Minute Videos
   const downloadSRT = () => {
     if (!generatedScript || !generatedScript.scenes || typeof window === 'undefined') return;
 
@@ -133,7 +133,7 @@ export default function StudioDashboard() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${generatedScript.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_subtitles.srt`;
+    a.download = `${generatedScript.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_3min_subtitles.srt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -189,9 +189,9 @@ export default function StudioDashboard() {
     }
   };
 
-  // Build Google Flow Omni Flash Prompt (10s duration)
-  const buildGoogleFlowOmniPrompt = (promptText: string, narration: string, sfx?: string, sceneNum?: number) => {
-    return `[Google Flow Omni Flash - Scene ${sceneNum} / 7 (10 Seconds)] Action: ${promptText}. Style Reference: @Lina and @Train must match uploaded visual references. Native Audio & Voiceover: Lina speaks in a sweet, cheerful 5-year-old girl voice saying: "${narration}". ${sfx ? `Sound effects: ${sfx}.` : ''} Format: 16:9 widescreen, 10s duration, 360p fast generation.`;
+  // Build Google Flow Omni Flash Prompt (10s duration per clip)
+  const buildGoogleFlowOmniPrompt = (promptText: string, narration: string, sfx?: string, sceneNum?: number, totalScenes?: number) => {
+    return `[Google Flow Omni Flash - Scene ${sceneNum} / ${totalScenes || 18} (10 Seconds)] Action: ${promptText}. Style Reference: @Lina and @Train must match uploaded visual references. Native Audio & Voiceover: Lina speaks in a sweet, cheerful 5-year-old girl voice saying: "${narration}". ${sfx ? `Sound effects: ${sfx}.` : ''} Format: 16:9 widescreen, 10s duration, 360p fast generation.`;
   };
 
   const generateProductionPlan = async () => {
@@ -217,7 +217,7 @@ export default function StudioDashboard() {
 You are the lead showrunner for "Lina's Magic Land", a 3D animated educational YouTube series for preschoolers.
 ${LINA_CHARACTER_PROMPT}
 
-Create a 70-SECOND episode (EXACTLY 7 SCENES of 10 SECONDS EACH) based on topic: "${topic}".
+Create a full 3-MINUTE episode (EXACTLY 18 SCENES of 10 SECONDS EACH = 180 seconds total) based on topic: "${topic}".
 Each scene must be engineered for Google Flow Omni Flash (360p fast generation, then upscaled) with native voiceover.
 
 Return ONLY valid JSON matching this exact structure:
@@ -241,35 +241,30 @@ Return ONLY valid JSON matching this exact structure:
       "sfx": "Train steam whistle choo-choo and magical chime",
       "imagePrompt": "Detailed 3D visual description including Lina (@Lina) and Magic Train (@Train)",
       "videoPrompt": "10-second camera motion prompt for Omni Flash"
-    },
-    { "sceneNumber": 2, "narration": "Sentence 2", "sfx": "SFX 2", "imagePrompt": "Prompt 2", "videoPrompt": "Motion 2" },
-    { "sceneNumber": 3, "narration": "Sentence 3", "sfx": "SFX 3", "imagePrompt": "Prompt 3", "videoPrompt": "Motion 3" },
-    { "sceneNumber": 4, "narration": "Sentence 4", "sfx": "SFX 4", "imagePrompt": "Prompt 4", "videoPrompt": "Motion 4" },
-    { "sceneNumber": 5, "narration": "Sentence 5", "sfx": "SFX 5", "imagePrompt": "Prompt 5", "videoPrompt": "Motion 5" },
-    { "sceneNumber": 6, "narration": "Sentence 6", "sfx": "SFX 6", "imagePrompt": "Prompt 6", "videoPrompt": "Motion 6" },
-    { "sceneNumber": 7, "narration": "Sentence 7", "sfx": "SFX 7", "imagePrompt": "Prompt 7", "videoPrompt": "Motion 7" }
+    }
   ]
 }
+Note: Generate exactly 18 scene objects in the "scenes" array for a full 3-minute story narrative.
 `;
 
     try {
       if (!apiKey) {
         setTimeout(() => {
-          const fallbackScenes = Array.from({ length: 7 }, (_, i) => ({
+          const fallbackScenes = Array.from({ length: 18 }, (_, i) => ({
             sceneNumber: i + 1,
-            narration: `Step ${i + 1}: Let us explore ${topic} together with Lina and the Magic Train!`,
+            narration: `Scene ${i + 1}: Let us explore ${topic} together with Lina and the Magic Train!`,
             sfx: "Train steam whistle choo-choo and cheerful chime",
             imagePrompt: `3D preschool animation shot ${i + 1} showing Lina (@Lina) and Magic Train (@Train) learning ${topic}, colorful landscape, 16:9 aspect ratio.`,
             videoPrompt: `10-second Omni Flash shot ${i + 1}: Lina giggling and waving as the Magic Train moves along the rainbow track.`
           }));
 
           const fallbackData = {
-            title: `Lina & The Magic Train: ${topic} (70s Episode)`,
-            learningGoal: `Learning about ${topic} in 7 magical 10-second steps.`,
+            title: `Lina & The Magic Train: ${topic} (3-Minute Episode)`,
+            learningGoal: `Learning about ${topic} through an interactive 3-minute 18-scene journey.`,
             thumbnailPrompt: `3D preschool animation thumbnail, Lina with dark wavy hair, yellow top, turquoise overalls, hugging cute smiling Magic Train, vibrant rainbow background, bright lighting, 16:9 aspect ratio.`,
             seo: {
-              title: `Lina's Magic Land - ${topic} | 70s Preschool Learning`,
-              description: `Join Lina (@Lina) and her cute Magic Train (@Train) in this 70-second adventure exploring ${topic}! #LinasMagicLand #Preschool`,
+              title: `Lina's Magic Land - ${topic} | 3-Minute Preschool Learning`,
+              description: `Join Lina (@Lina) and her cute Magic Train (@Train) in this full 3-minute adventure exploring ${topic}! #LinasMagicLand #Preschool`,
               tags: ['Lina Magic Land', 'Preschool Learning', topic, '3D Animation']
             },
             audioPlan: {
@@ -318,7 +313,7 @@ Return ONLY valid JSON matching this exact structure:
       <header className="studio-header">
         <div>
           <h1 className="studio-title">Lina AI Studio 🚂✨</h1>
-          <p className="studio-subtitle">70s (7x10s) Google Flow Production Hub</p>
+          <p className="studio-subtitle">3–5 Min (18+ Clips) Google Flow Production Hub</p>
         </div>
         <div className="btn-group">
           <button onClick={() => setShowSaved(!showSaved)} className="btn-secondary">
@@ -333,7 +328,7 @@ Return ONLY valid JSON matching this exact structure:
       {/* Visual & Channel Branding References */}
       <section className="card" style={{ border: '2px dashed #fbbf24', background: '#090d16' }}>
         <h3 style={{ color: '#fbbf24', fontSize: '13px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          ⭐ OFFICIAL CHANNEL BRANDING & CHARACTER SPECS
+          ⭐ OFFICIAL CHANNEL BRANDING &amp; CHARACTER SPECS
         </h3>
         <p style={{ fontSize: '11px', color: '#cbd5e1', marginBottom: '12px' }}>
           Download character references and your top-right watermark logo for CapCut video assembly.
@@ -418,9 +413,9 @@ Return ONLY valid JSON matching this exact structure:
       {/* Main Workstation */}
       <main>
         <section className="card">
-          <h2 className="section-title">👈 1. Generate 70s Episode (7x10s Omni Flash Clips)</h2>
+          <h2 className="section-title">👈 1. Generate 3–5 Minute Episode (18+ Clips)</h2>
           <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px' }}>
-            Enter an educational topic (e.g., &quot;Counting 1 to 5&quot;, &quot;Colors of Rainbow&quot;, &quot;Healthy Vegetables&quot;).
+            Enter an educational topic (e.g., &quot;Counting 1 to 10&quot;, &quot;Solar System Adventure&quot;, &quot;Forest Animals&quot;).
           </p>
           <input
             type="text"
@@ -430,7 +425,7 @@ Return ONLY valid JSON matching this exact structure:
             className="input-field"
           />
           <button onClick={generateProductionPlan} disabled={loading} className="btn-primary">
-            {loading ? 'Generating 7-Scene Package...' : 'Generate 70s Episode (7 Clips) ✨'}
+            {loading ? 'Generating 3-Minute Episode...' : 'Generate 3–5 Min Episode (18 Scenes) ✨'}
           </button>
           {error && <p style={{ fontSize: '12px', color: '#f87171', marginTop: '8px' }}>{error}</p>}
         </section>
@@ -440,7 +435,7 @@ Return ONLY valid JSON matching this exact structure:
           <div>
             <div className="card">
               <span className="label" style={{ color: '#fbbf24' }}>
-                70-Second Episode Workspace (7x10s Clips)
+                3-Minute Episode Workspace ({generatedScript.scenes?.length || 18}x 10s Clips)
               </span>
               <h2 className="section-title" style={{ fontSize: '20px', marginTop: '4px' }}>
                 {generatedScript.title}
@@ -474,11 +469,11 @@ Return ONLY valid JSON matching this exact structure:
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <input type="checkbox" checked={checklist.script} onChange={() => toggleChecklistItem('script')} />
-                    7-Scene Script
+                    3-Min Script (18 Scenes)
                   </label>
                   <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <input type="checkbox" checked={checklist.omniFlashClips} onChange={() => toggleChecklistItem('omniFlashClips')} />
-                    7x 10s 360p Clips
+                    10s Omni Flash Clips
                   </label>
                   <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <input type="checkbox" checked={checklist.flowUpscaled} onChange={() => toggleChecklistItem('flowUpscaled')} />
@@ -541,16 +536,17 @@ Return ONLY valid JSON matching this exact structure:
               </div>
             </div>
 
-            {/* Scene Breakdown (7 Scenes) */}
+            {/* Scene Breakdown (18+ Scenes) */}
             <h3 style={{ fontSize: '15px', color: '#ffffff', marginBottom: '12px', paddingLeft: '4px' }}>
-              🎬 7-Scene Omni Flash Prompts (10s Each = 70s Video)
+              🎬 Scene Prompts ({generatedScript.scenes?.length || 18} Scenes x 10s = {((generatedScript.scenes?.length || 18) * 10) / 60} Mins)
             </h3>
 
             {generatedScript.scenes.map((scene: any, idx: number) => {
               const sceneId = `scene-${idx}`;
               const audioId = `audio-${idx}`;
               const activeCooldown = cooldowns[sceneId] || 0;
-              const flowOmniPrompt = buildGoogleFlowOmniPrompt(scene.videoPrompt, scene.narration, scene.sfx, scene.sceneNumber || idx + 1);
+              const totalScenes = generatedScript.scenes.length;
+              const flowOmniPrompt = buildGoogleFlowOmniPrompt(scene.videoPrompt, scene.narration, scene.sfx, scene.sceneNumber || idx + 1, totalScenes);
 
               return (
                 <div key={scene.sceneNumber || idx} className="card">
@@ -559,7 +555,7 @@ Return ONLY valid JSON matching this exact structure:
                     style={{ borderBottom: '1px solid #1f2937', paddingBottom: '8px', marginBottom: '12px' }}
                   >
                     <span className="label" style={{ color: '#fbbf24', margin: 0 }}>
-                      Scene {scene.sceneNumber || idx + 1} of 7 (10 Seconds)
+                      Scene {scene.sceneNumber || idx + 1} of {totalScenes} (10 Seconds)
                     </span>
                     <button
                       onClick={() => renderFreeImage(scene.imagePrompt, sceneId)}
