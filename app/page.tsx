@@ -9,14 +9,14 @@ Visual Style: High-quality colorful 3D preschool animation, magical environments
 `;
 
 export default function StudioDashboard() {
-  const [apiKey, setApiKey] = useState('');
-  const [showSettings, setShowSettings] = useState(false);
-  const [topic, setTopic] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [apiKey, setApiKey] = useState<string>('');
+  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [topic, setTopic] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
   const [generatedScript, setGeneratedScript] = useState<any>(null);
   const [savedProjects, setSavedProjects] = useState<any[]>([]);
-  const [showSaved, setShowSaved] = useState(false);
-  const [error, setError] = useState('');
+  const [showSaved, setShowSaved] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Audio preview state
@@ -38,15 +38,17 @@ export default function StudioDashboard() {
   });
 
   useEffect(() => {
-    const savedKey = localStorage.getItem('LINA_GEMINI_API_KEY');
-    if (savedKey) setApiKey(savedKey);
+    if (typeof window !== 'undefined') {
+      const savedKey = localStorage.getItem('LINA_GEMINI_API_KEY');
+      if (savedKey) setApiKey(savedKey);
 
-    const storedProjects = localStorage.getItem('LINA_SAVED_PROJECTS');
-    if (storedProjects) {
-      try {
-        setSavedProjects(JSON.parse(storedProjects));
-      } catch (e) {
-        console.error('Error loading saved projects', e);
+      const storedProjects = localStorage.getItem('LINA_SAVED_PROJECTS');
+      if (storedProjects) {
+        try {
+          setSavedProjects(JSON.parse(storedProjects));
+        } catch (e: any) {
+          console.error('Error loading saved projects', e);
+        }
       }
     }
   }, []);
@@ -69,15 +71,20 @@ export default function StudioDashboard() {
   }, []);
 
   const saveApiKey = (key: string) => {
-    setApiKey(key.trim());
-    localStorage.setItem('LINA_GEMINI_API_KEY', key.trim());
+    const trimmed = key.trim();
+    setApiKey(trimmed);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('LINA_GEMINI_API_KEY', trimmed);
+    }
     setShowSettings(false);
   };
 
   const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
   };
 
   const saveCurrentProject = (projectData: any) => {
@@ -88,13 +95,17 @@ export default function StudioDashboard() {
     };
     const updated = [newProject, ...savedProjects];
     setSavedProjects(updated);
-    localStorage.setItem('LINA_SAVED_PROJECTS', JSON.stringify(updated));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('LINA_SAVED_PROJECTS', JSON.stringify(updated));
+    }
   };
 
   const deleteProject = (id: string) => {
     const updated = savedProjects.filter((p) => p.id !== id);
     setSavedProjects(updated);
-    localStorage.setItem('LINA_SAVED_PROJECTS', JSON.stringify(updated));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('LINA_SAVED_PROJECTS', JSON.stringify(updated));
+    }
   };
 
   const toggleChecklistItem = (key: keyof typeof checklist) => {
@@ -103,7 +114,7 @@ export default function StudioDashboard() {
 
   // Generate SRT Subtitle File
   const downloadSRT = () => {
-    if (!generatedScript || !generatedScript.scenes) return;
+    if (!generatedScript || !generatedScript.scenes || typeof window === 'undefined') return;
 
     let srtContent = '';
     generatedScript.scenes.forEach((scene: any, idx: number) => {
@@ -130,7 +141,7 @@ export default function StudioDashboard() {
 
   // Web SpeechSynthesizer Audio Preview
   const speakDialogue = (text: string, id: string) => {
-    if (!('speechSynthesis' in window)) {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       alert('Text-to-speech is not supported on this browser version.');
       return;
     }
@@ -163,17 +174,19 @@ export default function StudioDashboard() {
     const seed = Math.floor(Math.random() * 99999);
     const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?model=turbo&width=1280&height=720&nologo=true&seed=${seed}`;
 
-    const img = new Image();
-    img.src = imageUrl;
-    img.onload = () => {
-      setRenderedImages((prev) => ({ ...prev, [id]: imageUrl }));
-      setRenderingIndex(null);
-      setCooldowns((prev) => ({ ...prev, [id]: 45 }));
-    };
-    img.onerror = () => {
-      setRenderingIndex(null);
-      setCooldowns((prev) => ({ ...prev, [id]: 45 }));
-    };
+    if (typeof window !== 'undefined') {
+      const img = new Image();
+      img.src = imageUrl;
+      img.onload = () => {
+        setRenderedImages((prev) => ({ ...prev, [id]: imageUrl }));
+        setRenderingIndex(null);
+        setCooldowns((prev) => ({ ...prev, [id]: 45 }));
+      };
+      img.onerror = () => {
+        setRenderingIndex(null);
+        setCooldowns((prev) => ({ ...prev, [id]: 45 }));
+      };
+    }
   };
 
   // Build Google Flow Omni Flash Prompt (10s duration)
@@ -244,8 +257,8 @@ Return ONLY valid JSON matching this exact structure:
         setTimeout(() => {
           const fallbackScenes = Array.from({ length: 7 }, (_, i) => ({
             sceneNumber: i + 1,
-            narration: `Step ${i + 1}: Let's explore ${topic} together with Lina and the Magic Train!`,
-            sfx: "Train steam whistle 'choo-choo!' and cheerful chime",
+            narration: `Step ${i + 1}: Let us explore ${topic} together with Lina and the Magic Train!`,
+            sfx: "Train steam whistle choo-choo and cheerful chime",
             imagePrompt: `3D preschool animation shot ${i + 1} showing Lina (@Lina) and Magic Train (@Train) learning ${topic}, colorful landscape, 16:9 aspect ratio.`,
             videoPrompt: `10-second Omni Flash shot ${i + 1}: Lina giggling and waving as the Magic Train moves along the rainbow track.`
           }));
@@ -319,7 +332,7 @@ Return ONLY valid JSON matching this exact structure:
 
       {/* Visual & Channel Branding References */}
       <section className="card" style={{ border: '2px dashed #fbbf24', background: '#090d16' }}>
-        <h3 style={{ color: '#fbbf24', fontSize: '13px', marginBottom: '8px', display: 'flex', items: 'center', gap: '6px' }}>
+        <h3 style={{ color: '#fbbf24', fontSize: '13px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
           ⭐ OFFICIAL CHANNEL BRANDING & CHARACTER SPECS
         </h3>
         <p style={{ fontSize: '11px', color: '#cbd5e1', marginBottom: '12px' }}>
@@ -407,7 +420,7 @@ Return ONLY valid JSON matching this exact structure:
         <section className="card">
           <h2 className="section-title">👈 1. Generate 70s Episode (7x10s Omni Flash Clips)</h2>
           <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px' }}>
-            Enter an educational topic (e.g., "Counting 1 to 5", "Colors of Rainbow", "Healthy Vegetables").
+            Enter an educational topic (e.g., &quot;Counting 1 to 5&quot;, &quot;Colors of Rainbow&quot;, &quot;Healthy Vegetables&quot;).
           </p>
           <input
             type="text"
@@ -439,10 +452,10 @@ Return ONLY valid JSON matching this exact structure:
               {/* Subtitle Exporter & Video Assembly Bar */}
               <div className="card-inner" style={{ backgroundColor: '#0f172a', borderColor: '#3b82f6', marginTop: '12px' }}>
                 <span className="label" style={{ color: '#60a5fa' }}>
-                  🎬 Subtitle & Assembly Toolbar
+                  🎬 Subtitle &amp; Assembly Toolbar
                 </span>
                 <p style={{ fontSize: '11px', color: '#cbd5e1', marginBottom: '8px' }}>
-                  Style preview: <span style={{ color: '#facc15', fontWeight: 'bold', textShadow: '1px 1px 2px #000' }}>Yellow / Red / Green Bubble Subtitles</span> (top/bottom centered)
+                  Style preview: <span style={{ color: '#facc15', fontWeight: 'bold', textShadow: '1px 1px 2px #000' }}>Yellow / Red / Green Bubble Subtitles</span>
                 </p>
                 <button
                   onClick={downloadSRT}
@@ -486,7 +499,7 @@ Return ONLY valid JSON matching this exact structure:
                 </div>
               </div>
 
-              {/* YouTube Metadata Box with 1-Tap Copy Buttons */}
+              {/* YouTube Metadata Box */}
               <div className="card-inner" style={{ marginTop: '12px' }}>
                 <span className="label" style={{ color: '#fbbf24' }}>
                   🚀 YouTube Upload Metadata
@@ -582,7 +595,6 @@ Return ONLY valid JSON matching this exact structure:
                         </button>
                       </div>
                     </div>
-                    {/* Visual styled subtitle preview like picture 21 */}
                     <div
                       className="narration-box"
                       style={{
@@ -595,7 +607,7 @@ Return ONLY valid JSON matching this exact structure:
                         border: '1px dashed #eab308'
                       }}
                     >
-                      "{scene.narration}"
+                      &quot;{scene.narration}&quot;
                     </div>
                   </div>
 
