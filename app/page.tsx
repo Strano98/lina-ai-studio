@@ -19,6 +19,9 @@ export default function StudioDashboard() {
   const [error, setError] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Audio preview state
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+
   // Image Rendering & Cooldown States
   const [renderedImages, setRenderedImages] = useState<{ [key: string]: string }>({});
   const [renderingIndex, setRenderingIndex] = useState<string | null>(null);
@@ -99,11 +102,35 @@ export default function StudioDashboard() {
     setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // Web SpeechSynthesis Audio Player (Free In-Browser Voice Preview)
+  const speakDialogue = (text: string, id: string) => {
+    if (!('speechSynthesis' in window)) {
+      alert('Text-to-speech is not supported on this browser version.');
+      return;
+    }
+
+    if (playingAudioId === id) {
+      window.speechSynthesis.cancel();
+      setPlayingAudioId(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.pitch = 1.3; // Higher child-friendly pitch
+    utterance.rate = 0.95; // Slightly slower for preschoolers
+
+    utterance.onstart = () => setPlayingAudioId(id);
+    utterance.onend = () => setPlayingAudioId(null);
+    utterance.onerror = () => setPlayingAudioId(null);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
   const renderFreeImage = (promptText: string, id: string) => {
     if (cooldowns[id] && cooldowns[id] > 0) return;
 
     setRenderingIndex(id);
-    // Focus generation on character consistency from provided images
     const encodedPrompt = encodeURIComponent(
       `${promptText}, (consistent:1.3) based on character: 5-year-old wavy dark-brown hair yellow top turquoise overalls lina (@Lina) and magical colorful trains (@Train), 3d preschool animation, Pixar 8k render, cinematic lighting`
     );
@@ -123,12 +150,11 @@ export default function StudioDashboard() {
     };
   };
 
-  // Flow specific model with precise visual reference specs
   const buildGoogleFlowPrompt = (promptText: string, type: 'image' | 'video', sceneNum?: number) => {
     const intro = type === 'image' 
       ? `3D animation image for Scene ${sceneNum}.` 
       : `High-quality colorful 3D animation 16:9 widescreen 8-second motion camera sequence for Scene ${sceneNum}.`;
-    return `${intro} Prompt: ${promptText}. Style Reference: @Lina (5-year-old animated girl with round face, wavy dark-brown hair, yellow hair clip, yellow top, turquoise overalls) and @Train (friendly colorful toy-like magical train with glowing star-pattern wheels and face) must remain exactly consistent based on visual references. Render visual depth, natural smooth movements, child-friendly environment.`;
+    return `${intro} Prompt: ${promptText}. Style Reference: @Lina (5-year-old animated girl with round face, wavy dark-brown hair, yellow hair clip, yellow top, turquoise overalls) and @Train (friendly colorful toy-like magical train with glowing star-pattern wheels) must remain exactly consistent based on visual references.`;
   };
 
   const generateProductionPlan = async () => {
@@ -155,7 +181,7 @@ export default function StudioDashboard() {
 You are the lead showrunner for "Lina's Magic Land", a 3D animated educational YouTube series for preschoolers.
 ${LINA_CHARACTER_PROMPT}
 
-Create a complete production package based on topic: "${topic}". Optimize for consistency based on Lina's yellow top, turquoise overalls, colorful sneakers (@Lina) and the toy-like train with glowing magical details and carriages (@Train).
+Create a complete production package based on topic: "${topic}". Optimize for consistency based on Lina's yellow top, turquoise overalls (@Lina) and the toy-like train with glowing magical details (@Train).
 
 Return ONLY valid JSON matching this exact structure:
 {
@@ -268,40 +294,40 @@ Return ONLY valid JSON matching this exact structure:
         </div>
       </header>
 
-      {/* Visual Reference Gallery (Locked) */}
+      {/* Visual Reference Gallery */}
       <section className="card" style={{ border: '2px dashed #fbbf24', background: '#090d16' }}>
         <h3 style={{ color: '#fbbf24', fontSize: '13px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          🌟 OFFICIAL VISUAL REFERENCES (Google Flow & VEO 3.1)
+          ⭐ OFFICIAL VISUAL REFERENCES (Google Flow & VEO 3.1)
         </h3>
         <p style={{ fontSize: '11px', color: '#cbd5e1', marginBottom: '12px' }}>
-          Download these reference images and upload them directly into Google Flow / Imagen to ensure character and object consistency. Use tag <strong>@Lina</strong> and <strong>@Train</strong>.
+          Download these reference images and upload them directly into Google Flow / Imagen to ensure character consistency. Use tags <strong>@Lina</strong> and <strong>@Train</strong>.
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           {/* Card: Lina */}
           <div className="card-inner" style={{ border: '1px solid #334155', padding: '8px' }}>
-            <span className="label" style={{ color: '#60a5fa' }}>LINA (@Lina)</span>
+            <span className="label" style={{ color: '#60a5fa' }}>LINA (@LINA)</span>
             <div style={{ margin: '6px 0', height: '80px', overflow: 'hidden', borderRadius: '6px', background: '#ffffff', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <img src="/lina-ref.png" alt="Lina Front/3-4/Side Specs" style={{ height: '100%', objectFit: 'contain' }} onError={(e)=>{e.currentTarget.src='https://placehold.co/150x80/22c55e/ffffff?text=Lina+Ref'}} />
+              <img src="/lina-ref.png" alt="Lina Front/3-4/Side Specs" style={{ height: '100%', objectFit: 'contain' }} />
             </div>
             <div style={{ display: 'flex', gap: '4px' }}>
-              <a href="/lina-ref.png" download className="btn-copy" style={{ textAlign: 'center', flex: 1, backgroundColor: '#2563eb', color: '#ffffff' }}>📥 Get Ref</a>
+              <a href="/lina-ref.png" download className="btn-copy" style={{ textAlign: 'center', flex: 1, backgroundColor: '#2563eb', color: '#ffffff' }}>Get Ref</a>
               <button onClick={() => copyToClipboard('https://raw.githubusercontent.com/Strano98/lina-ai-studio/main/public/lina-ref.png', 'copy-lina')} className="btn-copy">
-                {copiedId === 'copy-lina' ? 'Copied! ✅' : '🔗 Copy Link'}
+                {copiedId === 'copy-lina' ? 'Copied! ✅' : 'Copy Link'}
               </button>
             </div>
           </div>
 
           {/* Card: Train */}
           <div className="card-inner" style={{ border: '1px solid #334155', padding: '8px' }}>
-            <span className="label" style={{ color: '#a78bfa' }}>MAGIC TRAIN (@Train)</span>
+            <span className="label" style={{ color: '#a78bfa' }}>MAGIC TRAIN (@TRAIN)</span>
             <div style={{ margin: '6px 0', height: '80px', overflow: 'hidden', borderRadius: '6px', background: '#ffffff', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <img src="/train-ref.png" alt="Magic Train Specs" style={{ height: '100%', objectFit: 'contain' }} onError={(e)=>{e.currentTarget.src='https://placehold.co/150x80/a78bfa/ffffff?text=Train+Ref'}} />
+              <img src="/train-ref.png" alt="Magic Train Specs" style={{ height: '100%', objectFit: 'contain' }} />
             </div>
             <div style={{ display: 'flex', gap: '4px' }}>
-              <a href="/train-ref.png" download className="btn-copy" style={{ textAlign: 'center', flex: 1, backgroundColor: '#2c5282', color: '#ffffff' }}>📥 Get Ref</a>
+              <a href="/train-ref.png" download className="btn-copy" style={{ textAlign: 'center', flex: 1, backgroundColor: '#2c5282', color: '#ffffff' }}>Get Ref</a>
               <button onClick={() => copyToClipboard('https://raw.githubusercontent.com/Strano98/lina-ai-studio/main/public/train-ref.png', 'copy-train')} className="btn-copy">
-                {copiedId === 'copy-train' ? 'Copied! ✅' : '🔗 Copy Link'}
+                {copiedId === 'copy-train' ? 'Copied! ✅' : 'Copy Link'}
               </button>
             </div>
           </div>
@@ -362,7 +388,7 @@ Return ONLY valid JSON matching this exact structure:
       {/* Main Workstation */}
       <main>
         <section className="card">
-          <h2 className="section-title">👉 1. AI Episode & Script Generator</h2>
+          <h2 className="section-title">👈 1. AI Episode & Script Generator</h2>
           <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px' }}>
             Enter an educational topic (e.g., "Counting 1 to 5", "Colors of Rainbow", "Healthy Vegetables").
           </p>
@@ -472,27 +498,6 @@ Return ONLY valid JSON matching this exact structure:
                   </div>
                   <div className="prompt-box">{generatedScript.thumbnailPrompt}</div>
 
-                  {/* Free Backup Generators */}
-                  <div style={{ marginTop: '8px', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '10px', color: '#94a3b8' }}>Free External Generators:</span>
-                    <a
-                      href="https://www.bing.com/images/create"
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ fontSize: '10px', color: '#fbbf24', textDecoration: 'underline' }}
-                    >
-                      Bing Designer
-                    </a>
-                    <a
-                      href="https://black-forest-labs-flux-1-schnell.hf.space"
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ fontSize: '10px', color: '#fbbf24', textDecoration: 'underline' }}
-                    >
-                      Hugging Face Flux
-                    </a>
-                  </div>
-
                   {renderedImages['thumb-img'] && (
                     <div style={{ marginTop: '10px' }}>
                       <img
@@ -528,11 +533,12 @@ Return ONLY valid JSON matching this exact structure:
 
             {/* Scenes */}
             <h3 style={{ fontSize: '15px', color: '#ffffff', marginBottom: '12px', paddingLeft: '4px' }}>
-              🎬 Scene Breakdown & AI Video Generation
+              🎬 Scene Breakdown, Audio & AI Video Generation
             </h3>
 
             {generatedScript.scenes.map((scene: any, idx: number) => {
               const sceneId = `scene-${idx}`;
+              const audioId = `audio-${idx}`;
               const activeCooldown = cooldowns[sceneId] || 0;
               const flowImagePrompt = buildGoogleFlowPrompt(scene.imagePrompt, 'image', scene.sceneNumber || idx + 1);
               const flowVideoPrompt = buildGoogleFlowPrompt(scene.videoPrompt, 'video', scene.sceneNumber || idx + 1);
@@ -560,13 +566,13 @@ Return ONLY valid JSON matching this exact structure:
                           ? 'Rendering...'
                           : activeCooldown > 0
                           ? `Wait ${activeCooldown}s`
-                          : '✨ Render Quick Preview Image'}
+                          : '✨ Preview Image'}
                       </button>
                       <button
                         onClick={() => copyToClipboard(scene.imagePrompt, `img-${idx}`)}
                         className="btn-copy"
                       >
-                        {copiedId === `img-${idx}` ? 'Copied! ✅' : 'Copy Preview Prompt'}
+                        {copiedId === `img-${idx}` ? 'Copied! ✅' : 'Copy Prompt'}
                       </button>
                     </div>
                   </div>
@@ -582,18 +588,32 @@ Return ONLY valid JSON matching this exact structure:
                     </div>
                   )}
 
+                  {/* Dialogue & Voiceover Engine */}
                   <div style={{ marginBottom: '10px' }}>
                     <div className="flex-between" style={{ marginBottom: '4px' }}>
                       <span className="label" style={{ margin: 0 }}>
                         Dialogue / Voiceover
                       </span>
-                      <button
-                        onClick={() => copyToClipboard(scene.narration, `voice-${idx}`)}
-                        className="btn-copy"
-                        style={{ fontSize: '10px', padding: '2px 6px' }}
-                      >
-                        {copiedId === `voice-${idx}` ? 'Copied! ✅' : 'Copy Script'}
-                      </button>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button
+                          onClick={() => speakDialogue(scene.narration, audioId)}
+                          className="btn-copy"
+                          style={{
+                            backgroundColor: playingAudioId === audioId ? '#ef4444' : '#10b981',
+                            color: '#ffffff',
+                            fontSize: '10px'
+                          }}
+                        >
+                          {playingAudioId === audioId ? '⏹️ Stop Voice' : '🔊 Listen Voice'}
+                        </button>
+                        <button
+                          onClick={() => copyToClipboard(scene.narration, `voice-${idx}`)}
+                          className="btn-copy"
+                          style={{ fontSize: '10px' }}
+                        >
+                          {copiedId === `voice-${idx}` ? 'Copied! ✅' : 'Copy Text'}
+                        </button>
+                      </div>
                     </div>
                     <div className="narration-box">"{scene.narration}"</div>
                   </div>
@@ -607,27 +627,21 @@ Return ONLY valid JSON matching this exact structure:
                     </div>
                   )}
 
-                  <div style={{ marginBottom: '10px' }}>
-                    <span className="label">Base Prompt</span>
-                    <div className="prompt-box">{scene.imagePrompt}</div>
-                  </div>
-
-                  {/* VEO 3.1 & Google Flow Unified Exporter Card */}
+                  {/* Google Flow Exporter */}
                   <div className="card-inner" style={{ borderColor: '#3b82f6', backgroundColor: '#090d16' }}>
                     <span className="label" style={{ color: '#60a5fa', marginBottom: '8px' }}>
-                      🎬 Google Flow (VEO 3.1) Exporters (Character reference integrated)
+                      🎬 Google Flow (VEO 3.1) Exporters (@Lina & @Train consistency)
                     </span>
 
-                    {/* Image Gen Mode */}
-                    <div style={{ marginBottom: '12px' }}>
+                    <div style={{ marginBottom: '10px' }}>
                       <div className="flex-between" style={{ marginBottom: '4px' }}>
-                        <span className="label" style={{ color: '#cbd5e1', fontSize: '10px', margin: 0 }}>📸 Image Generation Prompt</span>
+                        <span className="label" style={{ color: '#cbd5e1', fontSize: '10px', margin: 0 }}>📸 Image Prompt</span>
                         <button
                           onClick={() => copyToClipboard(flowImagePrompt, `flow-img-${idx}`)}
                           className="btn-copy"
                           style={{ fontSize: '10px', backgroundColor: '#1d4ed8', color: '#ffffff' }}
                         >
-                          {copiedId === `flow-img-${idx}` ? 'Copied! ✅' : 'Copy Flow Image Prompt'}
+                          {copiedId === `flow-img-${idx}` ? 'Copied! ✅' : 'Copy Image Prompt'}
                         </button>
                       </div>
                       <div className="prompt-box" style={{ color: '#93c5fd', fontSize: '11px' }}>
@@ -635,16 +649,15 @@ Return ONLY valid JSON matching this exact structure:
                       </div>
                     </div>
 
-                    {/* Video Gen Mode */}
-                    <div style={{ marginBottom: '12px' }}>
+                    <div style={{ marginBottom: '10px' }}>
                       <div className="flex-between" style={{ marginBottom: '4px' }}>
-                        <span className="label" style={{ color: '#cbd5e1', fontSize: '10px', margin: 0 }}>🎥 8s Video Generation Prompt</span>
+                        <span className="label" style={{ color: '#cbd5e1', fontSize: '10px', margin: 0 }}>🎥 8s Video Motion Prompt</span>
                         <button
                           onClick={() => copyToClipboard(flowVideoPrompt, `flow-vid-${idx}`)}
                           className="btn-copy"
                           style={{ fontSize: '10px', backgroundColor: '#1d4ed8', color: '#ffffff' }}
                         >
-                          {copiedId === `flow-vid-${idx}` ? 'Copied! ✅' : 'Copy Flow Video Prompt'}
+                          {copiedId === `flow-vid-${idx}` ? 'Copied! ✅' : 'Copy Motion Prompt'}
                         </button>
                       </div>
                       <div className="prompt-box" style={{ color: '#93c5fd', fontSize: '11px' }}>
