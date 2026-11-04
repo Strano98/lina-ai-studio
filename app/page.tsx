@@ -27,14 +27,14 @@ export default function StudioDashboard() {
   const [renderingIndex, setRenderingIndex] = useState<string | null>(null);
   const [cooldowns, setCooldowns] = useState<{ [key: string]: number }>({});
 
-  // Mobile Production Checklist State (Tailored for Omni Flash Subscription)
+  // Mobile Production Checklist (70-Second Omni Flash Workflow)
   const [checklist, setChecklist] = useState({
     script: true,
-    images: false,
-    omniFlash360p: false,
+    omniFlashClips: false,
     flowUpscaled: false,
-    editing: false,
-    thumbnail: false
+    subtitlesExported: false,
+    logoAdded: false,
+    youtubeUploaded: false
   });
 
   useEffect(() => {
@@ -101,7 +101,34 @@ export default function StudioDashboard() {
     setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Web SpeechSynthesis Audio Player
+  // Generate SRT Subtitle File
+  const downloadSRT = () => {
+    if (!generatedScript || !generatedScript.scenes) return;
+
+    let srtContent = '';
+    generatedScript.scenes.forEach((scene: any, idx: number) => {
+      const startSec = idx * 10;
+      const endSec = (idx + 1) * 10;
+      const formatTime = (sec: number) => {
+        const m = Math.floor(sec / 60).toString().padStart(2, '0');
+        const s = (sec % 60).toString().padStart(2, '0');
+        return `00:${m}:${s},000`;
+      };
+
+      srtContent += `${idx + 1}\n${formatTime(startSec)} --> ${formatTime(endSec)}\n${scene.narration}\n\n`;
+    });
+
+    const blob = new Blob([srtContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${generatedScript.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_subtitles.srt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  // Web SpeechSynthesizer Audio Preview
   const speakDialogue = (text: string, id: string) => {
     if (!('speechSynthesis' in window)) {
       alert('Text-to-speech is not supported on this browser version.');
@@ -149,9 +176,9 @@ export default function StudioDashboard() {
     };
   };
 
-  // Dedicated Google Flow Omni Flash Prompt Builder
+  // Build Google Flow Omni Flash Prompt (10s duration)
   const buildGoogleFlowOmniPrompt = (promptText: string, narration: string, sfx?: string, sceneNum?: number) => {
-    return `[Google Flow Omni Flash - 10s Clip] 3D preschool animation Scene ${sceneNum}. Action: ${promptText}. Style Reference: @Lina and @Train must match uploaded visual references. Native Audio & Voiceover: Lina speaks in a sweet, cheerful 5-year-old girl voice saying: "${narration}". ${sfx ? `Sound effects: ${sfx}.` : ''} Settings: 10 seconds duration, 16:9 widescreen format.`;
+    return `[Google Flow Omni Flash - Scene ${sceneNum} / 7 (10 Seconds)] Action: ${promptText}. Style Reference: @Lina and @Train must match uploaded visual references. Native Audio & Voiceover: Lina speaks in a sweet, cheerful 5-year-old girl voice saying: "${narration}". ${sfx ? `Sound effects: ${sfx}.` : ''} Format: 16:9 widescreen, 10s duration, 360p fast generation.`;
   };
 
   const generateProductionPlan = async () => {
@@ -166,18 +193,19 @@ export default function StudioDashboard() {
     setRenderedImages({});
     setChecklist({
       script: true,
-      images: false,
-      omniFlash360p: false,
+      omniFlashClips: false,
       flowUpscaled: false,
-      editing: false,
-      thumbnail: false
+      subtitlesExported: false,
+      logoAdded: false,
+      youtubeUploaded: false
     });
 
     const systemPrompt = `
 You are the lead showrunner for "Lina's Magic Land", a 3D animated educational YouTube series for preschoolers.
 ${LINA_CHARACTER_PROMPT}
 
-Create a complete production package based on topic: "${topic}". Each scene should be structured for a 10-second video clip generated in Google Flow Omni Flash (360p fast generation, then upscaled inside Google Flow) with native automatic voiceover.
+Create a 70-SECOND episode (EXACTLY 7 SCENES of 10 SECONDS EACH) based on topic: "${topic}".
+Each scene must be engineered for Google Flow Omni Flash (360p fast generation, then upscaled) with native voiceover.
 
 Return ONLY valid JSON matching this exact structure:
 {
@@ -196,11 +224,17 @@ Return ONLY valid JSON matching this exact structure:
   "scenes": [
     {
       "sceneNumber": 1,
-      "narration": "Voiceover narrative or Lina/Train dialogue",
+      "narration": "Short clear voiceover sentence for 10-second clip",
       "sfx": "Train steam whistle choo-choo and magical chime",
-      "imagePrompt": "Detailed 3D prompt for image generator including Lina and Magic Train visual consistency",
-      "videoPrompt": "10-second video motion description tailored for Google Flow Omni Flash camera movement"
-    }
+      "imagePrompt": "Detailed 3D visual description including Lina (@Lina) and Magic Train (@Train)",
+      "videoPrompt": "10-second camera motion prompt for Omni Flash"
+    },
+    { "sceneNumber": 2, "narration": "Sentence 2", "sfx": "SFX 2", "imagePrompt": "Prompt 2", "videoPrompt": "Motion 2" },
+    { "sceneNumber": 3, "narration": "Sentence 3", "sfx": "SFX 3", "imagePrompt": "Prompt 3", "videoPrompt": "Motion 3" },
+    { "sceneNumber": 4, "narration": "Sentence 4", "sfx": "SFX 4", "imagePrompt": "Prompt 4", "videoPrompt": "Motion 4" },
+    { "sceneNumber": 5, "narration": "Sentence 5", "sfx": "SFX 5", "imagePrompt": "Prompt 5", "videoPrompt": "Motion 5" },
+    { "sceneNumber": 6, "narration": "Sentence 6", "sfx": "SFX 6", "imagePrompt": "Prompt 6", "videoPrompt": "Motion 6" },
+    { "sceneNumber": 7, "narration": "Sentence 7", "sfx": "SFX 7", "imagePrompt": "Prompt 7", "videoPrompt": "Motion 7" }
   ]
 }
 `;
@@ -208,35 +242,28 @@ Return ONLY valid JSON matching this exact structure:
     try {
       if (!apiKey) {
         setTimeout(() => {
+          const fallbackScenes = Array.from({ length: 7 }, (_, i) => ({
+            sceneNumber: i + 1,
+            narration: `Step ${i + 1}: Let's explore ${topic} together with Lina and the Magic Train!`,
+            sfx: "Train steam whistle 'choo-choo!' and cheerful chime",
+            imagePrompt: `3D preschool animation shot ${i + 1} showing Lina (@Lina) and Magic Train (@Train) learning ${topic}, colorful landscape, 16:9 aspect ratio.`,
+            videoPrompt: `10-second Omni Flash shot ${i + 1}: Lina giggling and waving as the Magic Train moves along the rainbow track.`
+          }));
+
           const fallbackData = {
-            title: `Lina & The Magic Train: ${topic}`,
-            learningGoal: `Learning about ${topic} through magical play.`,
-            thumbnailPrompt: `3D preschool animation thumbnail, Lina with dark wavy hair, yellow hair clip, turquoise overalls, hugging the cute smiling Magic Train, vibrant rainbow background, bright lighting, high detail, 16:9 aspect ratio.`,
+            title: `Lina & The Magic Train: ${topic} (70s Episode)`,
+            learningGoal: `Learning about ${topic} in 7 magical 10-second steps.`,
+            thumbnailPrompt: `3D preschool animation thumbnail, Lina with dark wavy hair, yellow top, turquoise overalls, hugging cute smiling Magic Train, vibrant rainbow background, bright lighting, 16:9 aspect ratio.`,
             seo: {
-              title: `Lina's Magic Land - ${topic} | 3D Preschool Learning`,
-              description: `Join Lina (@Lina) and her cute Magic Train (@Train) as they explore ${topic}! Fun 3D animated learning for preschoolers. #LinasMagicLand #Preschool`,
+              title: `Lina's Magic Land - ${topic} | 70s Preschool Learning`,
+              description: `Join Lina (@Lina) and her cute Magic Train (@Train) in this 70-second adventure exploring ${topic}! #LinasMagicLand #Preschool`,
               tags: ['Lina Magic Land', 'Preschool Learning', topic, '3D Animation']
             },
             audioPlan: {
               bgMusic: "Upbeat bouncy playful acoustic guitar & xylophone preschool track",
               overallSFX: "Steam whistle choo-choo, sparkling magic wand sound, popping bubbles"
             },
-            scenes: [
-              {
-                sceneNumber: 1,
-                narration: "Hello friends! Welcome to Lina's Magic Land! Look, the Magic Train is here!",
-                sfx: "Cheerful train steam whistle 'choo-choo!' and sparkling magic sound",
-                imagePrompt: `3D preschool animation shot of Lina (@Lina), a 5-year-old girl with wavy dark-brown hair, yellow hair clip, turquoise overalls, waving excitedly next to a colorful friendly Magic Train (@Train) with glowing wheels, wide angle, bright sunny magical garden, 16:9 aspect ratio.`,
-                videoPrompt: "10-second shot: Lina waves cheerfully as the Magic Train rolls up slowly with puffing star-shaped steam, smooth 3D animation, 360p Omni Flash target."
-              },
-              {
-                sceneNumber: 2,
-                narration: `Today we are going on a journey to learn all about ${topic}! Choo choo!`,
-                sfx: "Train rolling on tracks sound with happy xylophone chime",
-                imagePrompt: `3D preschool animation, Lina (@Lina) riding inside the cheerful open carriage of the Magic Train (@Train), pointing happily towards a colorful landscape showing ${topic}, cinematic lighting, 16:9 aspect ratio.`,
-                videoPrompt: "10-second shot: Camera pans alongside the Magic Train moving through a vibrant rainbow track, Lina giggling and clapping."
-              }
-            ]
+            scenes: fallbackScenes
           };
           setGeneratedScript(fallbackData);
           saveCurrentProject(fallbackData);
@@ -278,7 +305,7 @@ Return ONLY valid JSON matching this exact structure:
       <header className="studio-header">
         <div>
           <h1 className="studio-title">Lina AI Studio 🚂✨</h1>
-          <p className="studio-subtitle">Google Flow Omni Flash Production Hub</p>
+          <p className="studio-subtitle">70s (7x10s) Google Flow Production Hub</p>
         </div>
         <div className="btn-group">
           <button onClick={() => setShowSaved(!showSaved)} className="btn-secondary">
@@ -290,42 +317,36 @@ Return ONLY valid JSON matching this exact structure:
         </div>
       </header>
 
-      {/* Visual Reference Gallery */}
+      {/* Visual & Channel Branding References */}
       <section className="card" style={{ border: '2px dashed #fbbf24', background: '#090d16' }}>
-        <h3 style={{ color: '#fbbf24', fontSize: '13px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          ⭐ OFFICIAL VISUAL REFERENCES (Google Flow / VEO 3.1)
+        <h3 style={{ color: '#fbbf24', fontSize: '13px', marginBottom: '8px', display: 'flex', items: 'center', gap: '6px' }}>
+          ⭐ OFFICIAL CHANNEL BRANDING & CHARACTER SPECS
         </h3>
         <p style={{ fontSize: '11px', color: '#cbd5e1', marginBottom: '12px' }}>
-          Download these reference images and upload them directly into Google Flow / Imagen to ensure character consistency. Use tags <strong>@Lina</strong> and <strong>@Train</strong>.
+          Download character references and your top-right watermark logo for CapCut video assembly.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           {/* Card: Lina */}
           <div className="card-inner" style={{ border: '1px solid #334155', padding: '8px' }}>
             <span className="label" style={{ color: '#60a5fa' }}>LINA (@LINA)</span>
-            <div style={{ margin: '6px 0', height: '80px', overflow: 'hidden', borderRadius: '6px', background: '#ffffff', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ margin: '6px 0', height: '70px', overflow: 'hidden', borderRadius: '6px', background: '#ffffff', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <img src="/lina-ref.png" alt="Lina Specs" style={{ height: '100%', objectFit: 'contain' }} />
             </div>
-            <div style={{ display: 'flex', gap: '4px' }}>
-              <a href="/lina-ref.png" download className="btn-copy" style={{ textAlign: 'center', flex: 1, backgroundColor: '#2563eb', color: '#ffffff' }}>Get Ref</a>
-              <button onClick={() => copyToClipboard('https://raw.githubusercontent.com/Strano98/lina-ai-studio/main/public/lina-ref.png', 'copy-lina')} className="btn-copy">
-                {copiedId === 'copy-lina' ? 'Copied! ✅' : 'Copy Link'}
-              </button>
-            </div>
+            <a href="/lina-ref.png" download className="btn-copy" style={{ textAlign: 'center', display: 'block', backgroundColor: '#2563eb', color: '#ffffff' }}>
+              Get Ref
+            </a>
           </div>
 
           {/* Card: Train */}
           <div className="card-inner" style={{ border: '1px solid #334155', padding: '8px' }}>
             <span className="label" style={{ color: '#a78bfa' }}>MAGIC TRAIN (@TRAIN)</span>
-            <div style={{ margin: '6px 0', height: '80px', overflow: 'hidden', borderRadius: '6px', background: '#ffffff', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ margin: '6px 0', height: '70px', overflow: 'hidden', borderRadius: '6px', background: '#ffffff', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <img src="/train-ref.png" alt="Magic Train Specs" style={{ height: '100%', objectFit: 'contain' }} />
             </div>
-            <div style={{ display: 'flex', gap: '4px' }}>
-              <a href="/train-ref.png" download className="btn-copy" style={{ textAlign: 'center', flex: 1, backgroundColor: '#2c5282', color: '#ffffff' }}>Get Ref</a>
-              <button onClick={() => copyToClipboard('https://raw.githubusercontent.com/Strano98/lina-ai-studio/main/public/train-ref.png', 'copy-train')} className="btn-copy">
-                {copiedId === 'copy-train' ? 'Copied! ✅' : 'Copy Link'}
-              </button>
-            </div>
+            <a href="/train-ref.png" download className="btn-copy" style={{ textAlign: 'center', display: 'block', backgroundColor: '#2c5282', color: '#ffffff' }}>
+              Get Ref
+            </a>
           </div>
         </div>
       </section>
@@ -339,7 +360,7 @@ Return ONLY valid JSON matching this exact structure:
             <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" style={{ color: '#fbbf24' }}>
               Google AI Studio
             </a>
-            . Saved on your phone only.
+            . Saved on your phone browser only.
           </p>
           <input
             type="password"
@@ -384,7 +405,7 @@ Return ONLY valid JSON matching this exact structure:
       {/* Main Workstation */}
       <main>
         <section className="card">
-          <h2 className="section-title">👈 1. AI Episode & Script Generator</h2>
+          <h2 className="section-title">👈 1. Generate 70s Episode (7x10s Omni Flash Clips)</h2>
           <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px' }}>
             Enter an educational topic (e.g., "Counting 1 to 5", "Colors of Rainbow", "Healthy Vegetables").
           </p>
@@ -396,18 +417,17 @@ Return ONLY valid JSON matching this exact structure:
             className="input-field"
           />
           <button onClick={generateProductionPlan} disabled={loading} className="btn-primary">
-            {loading ? 'Generating Episode...' : 'Generate Episode ✨'}
+            {loading ? 'Generating 7-Scene Package...' : 'Generate 70s Episode (7 Clips) ✨'}
           </button>
           {error && <p style={{ fontSize: '12px', color: '#f87171', marginTop: '8px' }}>{error}</p>}
         </section>
 
-        {/* Generated Episode Output */}
+        {/* Generated Episode Workspace */}
         {generatedScript && (
           <div>
-            {/* Episode Overview & Audio Plan */}
             <div className="card">
               <span className="label" style={{ color: '#fbbf24' }}>
-                Episode Workspace
+                70-Second Episode Workspace (7x10s Clips)
               </span>
               <h2 className="section-title" style={{ fontSize: '20px', marginTop: '4px' }}>
                 {generatedScript.title}
@@ -416,120 +436,101 @@ Return ONLY valid JSON matching this exact structure:
                 <strong>Educational Goal:</strong> {generatedScript.learningGoal}
               </p>
 
-              {/* Interactive Production Checklist (Google Flow Subscription Workflow) */}
-              <div className="card-inner" style={{ borderColor: '#334155' }}>
+              {/* Subtitle Exporter & Video Assembly Bar */}
+              <div className="card-inner" style={{ backgroundColor: '#0f172a', borderColor: '#3b82f6', marginTop: '12px' }}>
+                <span className="label" style={{ color: '#60a5fa' }}>
+                  🎬 Subtitle & Assembly Toolbar
+                </span>
+                <p style={{ fontSize: '11px', color: '#cbd5e1', marginBottom: '8px' }}>
+                  Style preview: <span style={{ color: '#facc15', fontWeight: 'bold', textShadow: '1px 1px 2px #000' }}>Yellow / Red / Green Bubble Subtitles</span> (top/bottom centered)
+                </p>
+                <button
+                  onClick={downloadSRT}
+                  className="btn-primary"
+                  style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', color: '#ffffff', padding: '10px' }}
+                >
+                  📥 Download CapCut Subtitles (.SRT file)
+                </button>
+              </div>
+
+              {/* Interactive Production Checklist */}
+              <div className="card-inner" style={{ borderColor: '#334155', marginTop: '12px' }}>
                 <span className="label" style={{ color: '#fbbf24', marginBottom: '8px' }}>
-                  ⚡ Google Flow Omni Flash Production Checklist
+                  ⚡ Production Checklist
                 </span>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <input type="checkbox" checked={checklist.script} onChange={() => toggleChecklistItem('script')} />
-                    Script Ready
+                    7-Scene Script
                   </label>
                   <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <input type="checkbox" checked={checklist.images} onChange={() => toggleChecklistItem('images')} />
-                    3D Ref Prompts
-                  </label>
-                  <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <input type="checkbox" checked={checklist.omniFlash360p} onChange={() => toggleChecklistItem('omniFlash360p')} />
-                    360p 10s Omni Flash
+                    <input type="checkbox" checked={checklist.omniFlashClips} onChange={() => toggleChecklistItem('omniFlashClips')} />
+                    7x 10s 360p Clips
                   </label>
                   <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <input type="checkbox" checked={checklist.flowUpscaled} onChange={() => toggleChecklistItem('flowUpscaled')} />
-                    Flow HD Upscale
+                    Upscaled in Flow
                   </label>
                   <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <input type="checkbox" checked={checklist.editing} onChange={() => toggleChecklistItem('editing')} />
-                    CapCut Assembly
+                    <input type="checkbox" checked={checklist.subtitlesExported} onChange={() => toggleChecklistItem('subtitlesExported')} />
+                    Subtitles Imported
                   </label>
                   <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <input type="checkbox" checked={checklist.thumbnail} onChange={() => toggleChecklistItem('thumbnail')} />
-                    Thumbnail Created
+                    <input type="checkbox" checked={checklist.logoAdded} onChange={() => toggleChecklistItem('logoAdded')} />
+                    Channel Logo Overlay
+                  </label>
+                  <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <input type="checkbox" checked={checklist.youtubeUploaded} onChange={() => toggleChecklistItem('youtubeUploaded')} />
+                    Uploaded to YouTube
                   </label>
                 </div>
               </div>
 
-              {/* Audio & Music Recommendations */}
-              {generatedScript.audioPlan && (
-                <div className="card-inner">
-                  <span className="label" style={{ color: '#fbbf24' }}>
-                    🎵 Sound & Music Direction
-                  </span>
-                  <p style={{ fontSize: '12px', color: '#e2e8f0', marginBottom: '4px' }}>
-                    <strong>Background Music:</strong> {generatedScript.audioPlan.bgMusic}
-                  </p>
-                  <p style={{ fontSize: '12px', color: '#cbd5e1' }}>
-                    <strong>Key Sound Effects:</strong> {generatedScript.audioPlan.overallSFX}
-                  </p>
-                </div>
-              )}
-
-              {/* Thumbnail Prompt & Free Renderer */}
-              {generatedScript.thumbnailPrompt && (
-                <div className="card-inner">
-                  <div className="flex-between" style={{ marginBottom: '6px' }}>
-                    <span className="label" style={{ color: '#fbbf24', margin: 0 }}>
-                      🖼️ 3D Thumbnail Prompt
-                    </span>
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      <button
-                        onClick={() => renderFreeImage(generatedScript.thumbnailPrompt, 'thumb-img')}
-                        className="btn-copy"
-                        disabled={renderingIndex === 'thumb-img' || (cooldowns['thumb-img'] > 0)}
-                        style={{ backgroundColor: cooldowns['thumb-img'] ? '#475569' : '#d97706', color: '#ffffff' }}
-                      >
-                        {renderingIndex === 'thumb-img'
-                          ? 'Rendering...'
-                          : cooldowns['thumb-img'] > 0
-                          ? `Wait ${cooldowns['thumb-img']}s`
-                          : '✨ Render'}
-                      </button>
-                      <button
-                        onClick={() => copyToClipboard(generatedScript.thumbnailPrompt, 'thumb-btn')}
-                        className="btn-copy"
-                      >
-                        {copiedId === 'thumb-btn' ? 'Copied! ✅' : 'Copy Prompt'}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="prompt-box">{generatedScript.thumbnailPrompt}</div>
-
-                  {renderedImages['thumb-img'] && (
-                    <div style={{ marginTop: '10px' }}>
-                      <img
-                        src={renderedImages['thumb-img']}
-                        alt="3D Thumbnail Preview"
-                        style={{ width: '100%', borderRadius: '10px', border: '1px solid #334155' }}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* YouTube Metadata */}
-              <div className="card-inner">
+              {/* YouTube Metadata Box with 1-Tap Copy Buttons */}
+              <div className="card-inner" style={{ marginTop: '12px' }}>
                 <span className="label" style={{ color: '#fbbf24' }}>
-                  YouTube SEO Metadata
+                  🚀 YouTube Upload Metadata
                 </span>
-                <p style={{ fontSize: '12px', color: '#e2e8f0', marginBottom: '4px' }}>
-                  <strong>Title:</strong> {generatedScript.seo.title}
-                </p>
-                <p style={{ fontSize: '12px', color: '#cbd5e1', marginBottom: '8px' }}>
-                  <strong>Description:</strong> {generatedScript.seo.description}
-                </p>
+                
+                <div style={{ marginBottom: '8px' }}>
+                  <div className="flex-between" style={{ marginBottom: '2px' }}>
+                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>Video Title</span>
+                    <button onClick={() => copyToClipboard(generatedScript.seo.title, 'yt-title')} className="btn-copy">
+                      {copiedId === 'yt-title' ? 'Copied! ✅' : 'Copy Title'}
+                    </button>
+                  </div>
+                  <p style={{ fontSize: '12px', color: '#ffffff', fontWeight: 'bold' }}>{generatedScript.seo.title}</p>
+                </div>
+
+                <div style={{ marginBottom: '8px' }}>
+                  <div className="flex-between" style={{ marginBottom: '2px' }}>
+                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>Description</span>
+                    <button onClick={() => copyToClipboard(generatedScript.seo.description, 'yt-desc')} className="btn-copy">
+                      {copiedId === 'yt-desc' ? 'Copied! ✅' : 'Copy Description'}
+                    </button>
+                  </div>
+                  <p style={{ fontSize: '12px', color: '#cbd5e1' }}>{generatedScript.seo.description}</p>
+                </div>
+
                 <div>
-                  {generatedScript.seo.tags.map((tag: string, idx: number) => (
-                    <span key={idx} className="tag">
-                      #{tag}
-                    </span>
-                  ))}
+                  <div className="flex-between" style={{ marginBottom: '2px' }}>
+                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>Tags</span>
+                    <button onClick={() => copyToClipboard(generatedScript.seo.tags.join(', '), 'yt-tags')} className="btn-copy">
+                      {copiedId === 'yt-tags' ? 'Copied! ✅' : 'Copy Tags'}
+                    </button>
+                  </div>
+                  <div>
+                    {generatedScript.seo.tags.map((tag: string, idx: number) => (
+                      <span key={idx} className="tag">#{tag}</span>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Scenes */}
+            {/* Scene Breakdown (7 Scenes) */}
             <h3 style={{ fontSize: '15px', color: '#ffffff', marginBottom: '12px', paddingLeft: '4px' }}>
-              🎬 Scene Breakdown & Google Flow Omni Flash Exporters
+              🎬 7-Scene Omni Flash Prompts (10s Each = 70s Video)
             </h3>
 
             {generatedScript.scenes.map((scene: any, idx: number) => {
@@ -545,100 +546,104 @@ Return ONLY valid JSON matching this exact structure:
                     style={{ borderBottom: '1px solid #1f2937', paddingBottom: '8px', marginBottom: '12px' }}
                   >
                     <span className="label" style={{ color: '#fbbf24', margin: 0 }}>
-                      Scene {scene.sceneNumber || idx + 1} (10-Second Clip)
+                      Scene {scene.sceneNumber || idx + 1} of 7 (10 Seconds)
                     </span>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <button
-                        onClick={() => renderFreeImage(scene.imagePrompt, sceneId)}
-                        className="btn-copy"
-                        disabled={renderingIndex === sceneId || activeCooldown > 0}
-                        style={{
-                          backgroundColor: activeCooldown > 0 ? '#475569' : '#d97706',
-                          color: '#ffffff'
-                        }}
-                      >
-                        {renderingIndex === sceneId
-                          ? 'Rendering...'
-                          : activeCooldown > 0
-                          ? `Wait ${activeCooldown}s`
-                          : '✨ Quick Image Preview'}
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => renderFreeImage(scene.imagePrompt, sceneId)}
+                      className="btn-copy"
+                      disabled={renderingIndex === sceneId || activeCooldown > 0}
+                      style={{ backgroundColor: activeCooldown > 0 ? '#475569' : '#d97706', color: '#ffffff' }}
+                    >
+                      {renderingIndex === sceneId ? 'Rendering...' : activeCooldown > 0 ? `Wait ${activeCooldown}s` : '✨ Preview Image'}
+                    </button>
                   </div>
 
-                  {/* Rendered Image Output */}
+                  {/* Rendered Image Preview */}
                   {renderedImages[sceneId] && (
                     <div style={{ marginBottom: '12px' }}>
-                      <img
-                        src={renderedImages[sceneId]}
-                        alt={`Scene ${scene.sceneNumber}`}
-                        style={{ width: '100%', borderRadius: '10px', border: '1px solid #334155' }}
-                      />
+                      <img src={renderedImages[sceneId]} alt={`Scene ${scene.sceneNumber}`} style={{ width: '100%', borderRadius: '10px', border: '1px solid #334155' }} />
                     </div>
                   )}
 
-                  {/* Dialogue Preview Engine */}
+                  {/* Dialogue & Voiceover Text */}
                   <div style={{ marginBottom: '10px' }}>
                     <div className="flex-between" style={{ marginBottom: '4px' }}>
-                      <span className="label" style={{ margin: 0 }}>
-                        Dialogue / Voiceover (Auto-generated in Flow)
-                      </span>
+                      <span className="label" style={{ margin: 0 }}>Dialogue / Subtitle Text</span>
                       <div style={{ display: 'flex', gap: '4px' }}>
                         <button
                           onClick={() => speakDialogue(scene.narration, audioId)}
                           className="btn-copy"
-                          style={{
-                            backgroundColor: playingAudioId === audioId ? '#ef4444' : '#10b981',
-                            color: '#ffffff',
-                            fontSize: '10px'
-                          }}
+                          style={{ backgroundColor: playingAudioId === audioId ? '#ef4444' : '#10b981', color: '#ffffff', fontSize: '10px' }}
                         >
-                          {playingAudioId === audioId ? '⏹️ Stop' : '🔊 Web Audio Listen'}
+                          {playingAudioId === audioId ? '⏹️ Stop' : '🔊 Listen'}
                         </button>
-                        <button
-                          onClick={() => copyToClipboard(scene.narration, `voice-${idx}`)}
-                          className="btn-copy"
-                          style={{ fontSize: '10px' }}
-                        >
-                          {copiedId === `voice-${idx}` ? 'Copied! ✅' : 'Copy Text'}
+                        <button onClick={() => copyToClipboard(scene.narration, `voice-${idx}`)} className="btn-copy" style={{ fontSize: '10px' }}>
+                          {copiedId === `voice-${idx}` ? 'Copied! ✅' : 'Copy'}
                         </button>
                       </div>
                     </div>
-                    <div className="narration-box">"{scene.narration}"</div>
+                    {/* Visual styled subtitle preview like picture 21 */}
+                    <div
+                      className="narration-box"
+                      style={{
+                        textAlign: 'center',
+                        fontWeight: 'bold',
+                        fontSize: '14px',
+                        color: '#facc15',
+                        textShadow: '1px 1px 3px #000000, -1px -1px 3px #000000',
+                        backgroundColor: '#020617',
+                        border: '1px dashed #eab308'
+                      }}
+                    >
+                      "{scene.narration}"
+                    </div>
                   </div>
 
-                  {scene.sfx && (
-                    <div style={{ marginBottom: '10px' }}>
-                      <span className="label">Scene Sound Effects (SFX)</span>
-                      <div className="narration-box" style={{ fontStyle: 'normal', color: '#fbbf24' }}>
-                        🔊 {scene.sfx}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Google Flow Omni Flash Dedicated Exporter Card */}
+                  {/* Google Flow Omni Flash Prompt Card */}
                   <div className="card-inner" style={{ borderColor: '#3b82f6', backgroundColor: '#090d16' }}>
-                    <span className="label" style={{ color: '#60a5fa', marginBottom: '6px' }}>
-                      ⚡ Google Flow (Omni Flash 360p + Native Voiceover)
-                    </span>
-
-                    <div style={{ marginBottom: '10px' }}>
-                      <div className="flex-between" style={{ marginBottom: '4px' }}>
-                        <span className="label" style={{ color: '#cbd5e1', fontSize: '10px', margin: 0 }}>
-                          📋 10-Second Omni Flash Prompt
-                        </span>
-                        <button
-                          onClick={() => copyToClipboard(flowOmniPrompt, `flow-omni-${idx}`)}
-                          className="btn-copy"
-                          style={{ fontSize: '10px', backgroundColor: '#1d4ed8', color: '#ffffff' }}
-                        >
-                          {copiedId === `flow-omni-${idx}` ? 'Copied! ✅' : 'Copy Omni Flash Prompt'}
-                        </button>
-                      </div>
-                      <div className="prompt-box" style={{ color: '#93c5fd', fontSize: '11px' }}>
-                        {flowOmniPrompt}
-                      </div>
+                    <div className="flex-between" style={{ marginBottom: '4px' }}>
+                      <span className="label" style={{ color: '#60a5fa', margin: 0 }}>
+                        ⚡ Scene {idx + 1} Omni Flash Prompt (360p, 10s)
+                      </span>
+                      <button
+                        onClick={() => copyToClipboard(flowOmniPrompt, `flow-omni-${idx}`)}
+                        className="btn-copy"
+                        style={{ fontSize: '10px', backgroundColor: '#1d4ed8', color: '#ffffff' }}
+                      >
+                        {copiedId === `flow-omni-${idx}` ? 'Copied! ✅' : 'Copy Scene Prompt'}
+                      </button>
+                    </div>
+                    <div className="prompt-box" style={{ color: '#93c5fd', fontSize: '11px' }}>
+                      {flowOmniPrompt}
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
+                    <div style={{ marginTop: '10px' }}>
                       <a
+                        href="https://labs.google/fx/tools/flow"
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          display: 'block',
+                          textAlign: 'center',
+                          backgroundColor: '#2563eb',
+                          color: '#ffffff',
+                          padding: '10px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          textDecoration: 'none'
+                        }}
+                      >
+                        🎬 Open Google Flow: Generate Clip {idx + 1}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
