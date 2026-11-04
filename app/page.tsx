@@ -49,7 +49,6 @@ export default function StudioDashboard() {
     }
   }, []);
 
-  // Cooldown timer effect for free rendering rate limits
   useEffect(() => {
     const timer = setInterval(() => {
       setCooldowns((prev) => {
@@ -104,8 +103,9 @@ export default function StudioDashboard() {
     if (cooldowns[id] && cooldowns[id] > 0) return;
 
     setRenderingIndex(id);
+    // Focus generation on character consistency from provided images
     const encodedPrompt = encodeURIComponent(
-      `${promptText}, 3d preschool animation, Pixar render, 8k, bright lighting, colorful`
+      `${promptText}, (consistent:1.3) based on character: 5-year-old wavy dark-brown hair yellow top turquoise overalls lina (@Lina) and magical colorful trains (@Train), 3d preschool animation, Pixar 8k render, cinematic lighting`
     );
     const seed = Math.floor(Math.random() * 99999);
     const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?model=turbo&width=1280&height=720&nologo=true&seed=${seed}`;
@@ -123,9 +123,12 @@ export default function StudioDashboard() {
     };
   };
 
-  // Helper to format Google Flow (Veo 3.1) prompts
-  const buildGoogleFlowPrompt = (videoPrompt: string, narration: string, sfx?: string) => {
-    return `${videoPrompt}. Style: Colorful 3D preschool animation, 16:9 widescreen, cinematic lighting. Character details: Lina (5-year-old girl, round face, wavy dark hair, yellow hair clip, yellow top, turquoise overalls) and Magic Train (cute colorful friendly train). Audio: Dialogue "${narration}". ${sfx ? `Sound effects: ${sfx}.` : ''}`;
+  // Flow specific model with precise visual reference specs
+  const buildGoogleFlowPrompt = (promptText: string, type: 'image' | 'video', sceneNum?: number) => {
+    const intro = type === 'image' 
+      ? `3D animation image for Scene ${sceneNum}.` 
+      : `High-quality colorful 3D animation 16:9 widescreen 8-second motion camera sequence for Scene ${sceneNum}.`;
+    return `${intro} Prompt: ${promptText}. Style Reference: @Lina (5-year-old animated girl with round face, wavy dark-brown hair, yellow hair clip, yellow top, turquoise overalls) and @Train (friendly colorful toy-like magical train with glowing star-pattern wheels and face) must remain exactly consistent based on visual references. Render visual depth, natural smooth movements, child-friendly environment.`;
   };
 
   const generateProductionPlan = async () => {
@@ -152,13 +155,13 @@ export default function StudioDashboard() {
 You are the lead showrunner for "Lina's Magic Land", a 3D animated educational YouTube series for preschoolers.
 ${LINA_CHARACTER_PROMPT}
 
-Create a complete production package based on topic: "${topic}".
+Create a complete production package based on topic: "${topic}". Optimize for consistency based on Lina's yellow top, turquoise overalls, colorful sneakers (@Lina) and the toy-like train with glowing magical details and carriages (@Train).
 
 Return ONLY valid JSON matching this exact structure:
 {
   "title": "Episode Title",
   "learningGoal": "Core educational message",
-  "thumbnailPrompt": "3D YouTube thumbnail prompt featuring Lina smiling next to Magic Train with high visual contrast",
+  "thumbnailPrompt": "3D YouTube thumbnail prompt featuring @Lina and @Train with high visual contrast",
   "seo": {
     "title": "Optimized YouTube Title",
     "description": "Engaging description with hashtags",
@@ -174,7 +177,7 @@ Return ONLY valid JSON matching this exact structure:
       "narration": "Voiceover narrative or Lina/Train dialogue",
       "sfx": "Train steam whistle choo-choo and magical chime",
       "imagePrompt": "Detailed 3D prompt for image generator including Lina and Magic Train visual consistency",
-      "videoPrompt": "Motion description for AI video generator (Runway/Luma/Google Flow style)"
+      "videoPrompt": "Motion description for AI video generator (Runway/Luma style)"
     }
   ]
 }
@@ -189,7 +192,7 @@ Return ONLY valid JSON matching this exact structure:
             thumbnailPrompt: `3D preschool animation thumbnail, Lina with dark wavy hair, yellow hair clip, turquoise overalls, hugging the cute smiling Magic Train, vibrant rainbow background, bright lighting, high detail, 16:9 aspect ratio.`,
             seo: {
               title: `Lina's Magic Land - ${topic} | 3D Preschool Learning`,
-              description: `Join Lina and her cute Magic Train as they explore ${topic}! Fun 3D animated learning for preschoolers. #LinasMagicLand #Preschool`,
+              description: `Join Lina (@Lina) and her cute Magic Train (@Train) as they explore ${topic}! Fun 3D animated learning for preschoolers. #LinasMagicLand #Preschool`,
               tags: ['Lina Magic Land', 'Preschool Learning', topic, '3D Animation']
             },
             audioPlan: {
@@ -201,14 +204,14 @@ Return ONLY valid JSON matching this exact structure:
                 sceneNumber: 1,
                 narration: "Hello friends! Welcome to Lina's Magic Land! Look, the Magic Train is here!",
                 sfx: "Cheerful train steam whistle 'choo-choo!' and sparkling magic sound",
-                imagePrompt: `3D preschool animation shot of Lina, a 5-year-old girl with wavy dark-brown hair, yellow hair clip, turquoise overalls, waving excitedly next to a colorful friendly Magic Train with glowing wheels, wide angle, bright sunny magical garden, 16:9 aspect ratio.`,
+                imagePrompt: `3D preschool animation shot of Lina (@Lina), a 5-year-old girl with wavy dark-brown hair, yellow hair clip, turquoise overalls, waving excitedly next to a colorful friendly Magic Train (@Train) with glowing wheels, wide angle, bright sunny magical garden, 16:9 aspect ratio.`,
                 videoPrompt: "Lina waves cheerfully as the Magic Train rolls up slowly with puffing star-shaped steam, smooth 3D animation, 8 seconds."
               },
               {
                 sceneNumber: 2,
                 narration: `Today we are going on a journey to learn all about ${topic}! Choo choo!`,
                 sfx: "Train rolling on tracks sound with happy xylophone chime",
-                imagePrompt: `3D preschool animation, Lina riding inside the cheerful open carriage of the Magic Train, pointing happily towards a colorful landscape showing ${topic}, cinematic lighting, 16:9 aspect ratio.`,
+                imagePrompt: `3D preschool animation, Lina (@Lina) riding inside the cheerful open carriage of the Magic Train (@Train), pointing happily towards a colorful landscape showing ${topic}, cinematic lighting, 16:9 aspect ratio.`,
                 videoPrompt: "Camera pans alongside the Magic Train moving through a vibrant rainbow track, Lina giggling and clapping, 8 seconds."
               }
             ]
@@ -265,6 +268,46 @@ Return ONLY valid JSON matching this exact structure:
         </div>
       </header>
 
+      {/* Visual Reference Gallery (Locked) */}
+      <section className="card" style={{ border: '2px dashed #fbbf24', background: '#090d16' }}>
+        <h3 style={{ color: '#fbbf24', fontSize: '13px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          🌟 OFFICIAL VISUAL REFERENCES (Google Flow & VEO 3.1)
+        </h3>
+        <p style={{ fontSize: '11px', color: '#cbd5e1', marginBottom: '12px' }}>
+          Download these reference images and upload them directly into Google Flow / Imagen to ensure character and object consistency. Use tag <strong>@Lina</strong> and <strong>@Train</strong>.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          {/* Card: Lina */}
+          <div className="card-inner" style={{ border: '1px solid #334155', padding: '8px' }}>
+            <span className="label" style={{ color: '#60a5fa' }}>LINA (@Lina)</span>
+            <div style={{ margin: '6px 0', height: '80px', overflow: 'hidden', borderRadius: '6px', background: '#ffffff', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <img src="/lina-ref.png" alt="Lina Front/3-4/Side Specs" style={{ height: '100%', objectFit: 'contain' }} onError={(e)=>{e.currentTarget.src='https://placehold.co/150x80/22c55e/ffffff?text=Lina+Ref'}} />
+            </div>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <a href="/lina-ref.png" download className="btn-copy" style={{ textAlign: 'center', flex: 1, backgroundColor: '#2563eb', color: '#ffffff' }}>📥 Get Ref</a>
+              <button onClick={() => copyToClipboard('https://raw.githubusercontent.com/Strano98/lina-ai-studio/main/public/lina-ref.png', 'copy-lina')} className="btn-copy">
+                {copiedId === 'copy-lina' ? 'Copied! ✅' : '🔗 Copy Link'}
+              </button>
+            </div>
+          </div>
+
+          {/* Card: Train */}
+          <div className="card-inner" style={{ border: '1px solid #334155', padding: '8px' }}>
+            <span className="label" style={{ color: '#a78bfa' }}>MAGIC TRAIN (@Train)</span>
+            <div style={{ margin: '6px 0', height: '80px', overflow: 'hidden', borderRadius: '6px', background: '#ffffff', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <img src="/train-ref.png" alt="Magic Train Specs" style={{ height: '100%', objectFit: 'contain' }} onError={(e)=>{e.currentTarget.src='https://placehold.co/150x80/a78bfa/ffffff?text=Train+Ref'}} />
+            </div>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <a href="/train-ref.png" download className="btn-copy" style={{ textAlign: 'center', flex: 1, backgroundColor: '#2c5282', color: '#ffffff' }}>📥 Get Ref</a>
+              <button onClick={() => copyToClipboard('https://raw.githubusercontent.com/Strano98/lina-ai-studio/main/public/train-ref.png', 'copy-train')} className="btn-copy">
+                {copiedId === 'copy-train' ? 'Copied! ✅' : '🔗 Copy Link'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Settings Drawer */}
       {showSettings && (
         <div className="card">
@@ -316,10 +359,10 @@ Return ONLY valid JSON matching this exact structure:
         </div>
       )}
 
-      {/* Main Form */}
+      {/* Main Workstation */}
       <main>
         <section className="card">
-          <h2 className="section-title">1. AI Episode & Script Generator</h2>
+          <h2 className="section-title">👉 1. AI Episode & Script Generator</h2>
           <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px' }}>
             Enter an educational topic (e.g., "Counting 1 to 5", "Colors of Rainbow", "Healthy Vegetables").
           </p>
@@ -491,7 +534,8 @@ Return ONLY valid JSON matching this exact structure:
             {generatedScript.scenes.map((scene: any, idx: number) => {
               const sceneId = `scene-${idx}`;
               const activeCooldown = cooldowns[sceneId] || 0;
-              const flowPrompt = buildGoogleFlowPrompt(scene.videoPrompt, scene.narration, scene.sfx);
+              const flowImagePrompt = buildGoogleFlowPrompt(scene.imagePrompt, 'image', scene.sceneNumber || idx + 1);
+              const flowVideoPrompt = buildGoogleFlowPrompt(scene.videoPrompt, 'video', scene.sceneNumber || idx + 1);
 
               return (
                 <div key={scene.sceneNumber || idx} className="card">
@@ -516,13 +560,13 @@ Return ONLY valid JSON matching this exact structure:
                           ? 'Rendering...'
                           : activeCooldown > 0
                           ? `Wait ${activeCooldown}s`
-                          : '✨ Render 3D Image'}
+                          : '✨ Render Quick Preview Image'}
                       </button>
                       <button
                         onClick={() => copyToClipboard(scene.imagePrompt, `img-${idx}`)}
                         className="btn-copy"
                       >
-                        {copiedId === `img-${idx}` ? 'Copied! ✅' : 'Copy Prompt'}
+                        {copiedId === `img-${idx}` ? 'Copied! ✅' : 'Copy Preview Prompt'}
                       </button>
                     </div>
                   </div>
@@ -564,29 +608,51 @@ Return ONLY valid JSON matching this exact structure:
                   )}
 
                   <div style={{ marginBottom: '10px' }}>
-                    <span className="label">3D Image Generator Prompt</span>
+                    <span className="label">Base Prompt</span>
                     <div className="prompt-box">{scene.imagePrompt}</div>
                   </div>
 
-                  {/* Google Flow (Veo 3.1) Dedicated Card */}
+                  {/* VEO 3.1 & Google Flow Unified Exporter Card */}
                   <div className="card-inner" style={{ borderColor: '#3b82f6', backgroundColor: '#090d16' }}>
-                    <div className="flex-between" style={{ marginBottom: '6px' }}>
-                      <span className="label" style={{ color: '#60a5fa', margin: 0 }}>
-                        🎥 Google Flow (Veo 3.1) Video Exporter
-                      </span>
-                      <button
-                        onClick={() => copyToClipboard(flowPrompt, `flow-${idx}`)}
-                        className="btn-copy"
-                        style={{ backgroundColor: '#1d4ed8', color: '#ffffff' }}
-                      >
-                        {copiedId === `flow-${idx}` ? 'Copied! ✅' : 'Copy Veo Prompt'}
-                      </button>
-                    </div>
-                    <div className="prompt-box" style={{ color: '#93c5fd', fontSize: '11px' }}>
-                      {flowPrompt}
+                    <span className="label" style={{ color: '#60a5fa', marginBottom: '8px' }}>
+                      🎬 Google Flow (VEO 3.1) Exporters (Character reference integrated)
+                    </span>
+
+                    {/* Image Gen Mode */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <div className="flex-between" style={{ marginBottom: '4px' }}>
+                        <span className="label" style={{ color: '#cbd5e1', fontSize: '10px', margin: 0 }}>📸 Image Generation Prompt</span>
+                        <button
+                          onClick={() => copyToClipboard(flowImagePrompt, `flow-img-${idx}`)}
+                          className="btn-copy"
+                          style={{ fontSize: '10px', backgroundColor: '#1d4ed8', color: '#ffffff' }}
+                        >
+                          {copiedId === `flow-img-${idx}` ? 'Copied! ✅' : 'Copy Flow Image Prompt'}
+                        </button>
+                      </div>
+                      <div className="prompt-box" style={{ color: '#93c5fd', fontSize: '11px' }}>
+                        {flowImagePrompt}
+                      </div>
                     </div>
 
-                    <div style={{ marginTop: '10px' }}>
+                    {/* Video Gen Mode */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <div className="flex-between" style={{ marginBottom: '4px' }}>
+                        <span className="label" style={{ color: '#cbd5e1', fontSize: '10px', margin: 0 }}>🎥 8s Video Generation Prompt</span>
+                        <button
+                          onClick={() => copyToClipboard(flowVideoPrompt, `flow-vid-${idx}`)}
+                          className="btn-copy"
+                          style={{ fontSize: '10px', backgroundColor: '#1d4ed8', color: '#ffffff' }}
+                        >
+                          {copiedId === `flow-vid-${idx}` ? 'Copied! ✅' : 'Copy Flow Video Prompt'}
+                        </button>
+                      </div>
+                      <div className="prompt-box" style={{ color: '#93c5fd', fontSize: '11px' }}>
+                        {flowVideoPrompt}
+                      </div>
+                    </div>
+
+                    <div>
                       <a
                         href="https://labs.google/fx/tools/flow"
                         target="_blank"
@@ -603,7 +669,7 @@ Return ONLY valid JSON matching this exact structure:
                           textDecoration: 'none'
                         }}
                       >
-                        🎬 Open Google Flow (50 Free Daily Clips)
+                        🎬 Open Google Flow to Generate
                       </a>
                     </div>
                   </div>
