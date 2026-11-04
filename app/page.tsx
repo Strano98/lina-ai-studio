@@ -27,15 +27,14 @@ export default function StudioDashboard() {
   const [renderingIndex, setRenderingIndex] = useState<string | null>(null);
   const [cooldowns, setCooldowns] = useState<{ [key: string]: number }>({});
 
-  // Mobile Production Checklist State
+  // Mobile Production Checklist State (Tailored for Omni Flash Subscription)
   const [checklist, setChecklist] = useState({
     script: true,
-    voiceover: false,
     images: false,
-    videoClips: false,
+    omniFlash360p: false,
+    flowUpscaled: false,
     editing: false,
-    thumbnail: false,
-    uploaded: false
+    thumbnail: false
   });
 
   useEffect(() => {
@@ -102,7 +101,7 @@ export default function StudioDashboard() {
     setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Web SpeechSynthesis Audio Player (Free In-Browser Voice Preview)
+  // Web SpeechSynthesis Audio Player
   const speakDialogue = (text: string, id: string) => {
     if (!('speechSynthesis' in window)) {
       alert('Text-to-speech is not supported on this browser version.');
@@ -117,8 +116,8 @@ export default function StudioDashboard() {
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.pitch = 1.3; // Higher child-friendly pitch
-    utterance.rate = 0.95; // Slightly slower for preschoolers
+    utterance.pitch = 1.3;
+    utterance.rate = 0.95;
 
     utterance.onstart = () => setPlayingAudioId(id);
     utterance.onend = () => setPlayingAudioId(null);
@@ -150,11 +149,9 @@ export default function StudioDashboard() {
     };
   };
 
-  const buildGoogleFlowPrompt = (promptText: string, type: 'image' | 'video', sceneNum?: number) => {
-    const intro = type === 'image' 
-      ? `3D animation image for Scene ${sceneNum}.` 
-      : `High-quality colorful 3D animation 16:9 widescreen 8-second motion camera sequence for Scene ${sceneNum}.`;
-    return `${intro} Prompt: ${promptText}. Style Reference: @Lina (5-year-old animated girl with round face, wavy dark-brown hair, yellow hair clip, yellow top, turquoise overalls) and @Train (friendly colorful toy-like magical train with glowing star-pattern wheels) must remain exactly consistent based on visual references.`;
+  // Dedicated Google Flow Omni Flash Prompt Builder
+  const buildGoogleFlowOmniPrompt = (promptText: string, narration: string, sfx?: string, sceneNum?: number) => {
+    return `[Google Flow Omni Flash - 10s Clip] 3D preschool animation Scene ${sceneNum}. Action: ${promptText}. Style Reference: @Lina and @Train must match uploaded visual references. Native Audio & Voiceover: Lina speaks in a sweet, cheerful 5-year-old girl voice saying: "${narration}". ${sfx ? `Sound effects: ${sfx}.` : ''} Settings: 10 seconds duration, 16:9 widescreen format.`;
   };
 
   const generateProductionPlan = async () => {
@@ -169,19 +166,18 @@ export default function StudioDashboard() {
     setRenderedImages({});
     setChecklist({
       script: true,
-      voiceover: false,
       images: false,
-      videoClips: false,
+      omniFlash360p: false,
+      flowUpscaled: false,
       editing: false,
-      thumbnail: false,
-      uploaded: false
+      thumbnail: false
     });
 
     const systemPrompt = `
 You are the lead showrunner for "Lina's Magic Land", a 3D animated educational YouTube series for preschoolers.
 ${LINA_CHARACTER_PROMPT}
 
-Create a complete production package based on topic: "${topic}". Optimize for consistency based on Lina's yellow top, turquoise overalls (@Lina) and the toy-like train with glowing magical details (@Train).
+Create a complete production package based on topic: "${topic}". Each scene should be structured for a 10-second video clip generated in Google Flow Omni Flash (360p fast generation, then upscaled inside Google Flow) with native automatic voiceover.
 
 Return ONLY valid JSON matching this exact structure:
 {
@@ -203,7 +199,7 @@ Return ONLY valid JSON matching this exact structure:
       "narration": "Voiceover narrative or Lina/Train dialogue",
       "sfx": "Train steam whistle choo-choo and magical chime",
       "imagePrompt": "Detailed 3D prompt for image generator including Lina and Magic Train visual consistency",
-      "videoPrompt": "Motion description for AI video generator (Runway/Luma style)"
+      "videoPrompt": "10-second video motion description tailored for Google Flow Omni Flash camera movement"
     }
   ]
 }
@@ -231,14 +227,14 @@ Return ONLY valid JSON matching this exact structure:
                 narration: "Hello friends! Welcome to Lina's Magic Land! Look, the Magic Train is here!",
                 sfx: "Cheerful train steam whistle 'choo-choo!' and sparkling magic sound",
                 imagePrompt: `3D preschool animation shot of Lina (@Lina), a 5-year-old girl with wavy dark-brown hair, yellow hair clip, turquoise overalls, waving excitedly next to a colorful friendly Magic Train (@Train) with glowing wheels, wide angle, bright sunny magical garden, 16:9 aspect ratio.`,
-                videoPrompt: "Lina waves cheerfully as the Magic Train rolls up slowly with puffing star-shaped steam, smooth 3D animation, 8 seconds."
+                videoPrompt: "10-second shot: Lina waves cheerfully as the Magic Train rolls up slowly with puffing star-shaped steam, smooth 3D animation, 360p Omni Flash target."
               },
               {
                 sceneNumber: 2,
                 narration: `Today we are going on a journey to learn all about ${topic}! Choo choo!`,
                 sfx: "Train rolling on tracks sound with happy xylophone chime",
                 imagePrompt: `3D preschool animation, Lina (@Lina) riding inside the cheerful open carriage of the Magic Train (@Train), pointing happily towards a colorful landscape showing ${topic}, cinematic lighting, 16:9 aspect ratio.`,
-                videoPrompt: "Camera pans alongside the Magic Train moving through a vibrant rainbow track, Lina giggling and clapping, 8 seconds."
+                videoPrompt: "10-second shot: Camera pans alongside the Magic Train moving through a vibrant rainbow track, Lina giggling and clapping."
               }
             ]
           };
@@ -282,7 +278,7 @@ Return ONLY valid JSON matching this exact structure:
       <header className="studio-header">
         <div>
           <h1 className="studio-title">Lina AI Studio 🚂✨</h1>
-          <p className="studio-subtitle">Production Hub for Lina's Magic Land</p>
+          <p className="studio-subtitle">Google Flow Omni Flash Production Hub</p>
         </div>
         <div className="btn-group">
           <button onClick={() => setShowSaved(!showSaved)} className="btn-secondary">
@@ -297,7 +293,7 @@ Return ONLY valid JSON matching this exact structure:
       {/* Visual Reference Gallery */}
       <section className="card" style={{ border: '2px dashed #fbbf24', background: '#090d16' }}>
         <h3 style={{ color: '#fbbf24', fontSize: '13px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          ⭐ OFFICIAL VISUAL REFERENCES (Google Flow & VEO 3.1)
+          ⭐ OFFICIAL VISUAL REFERENCES (Google Flow / VEO 3.1)
         </h3>
         <p style={{ fontSize: '11px', color: '#cbd5e1', marginBottom: '12px' }}>
           Download these reference images and upload them directly into Google Flow / Imagen to ensure character consistency. Use tags <strong>@Lina</strong> and <strong>@Train</strong>.
@@ -308,7 +304,7 @@ Return ONLY valid JSON matching this exact structure:
           <div className="card-inner" style={{ border: '1px solid #334155', padding: '8px' }}>
             <span className="label" style={{ color: '#60a5fa' }}>LINA (@LINA)</span>
             <div style={{ margin: '6px 0', height: '80px', overflow: 'hidden', borderRadius: '6px', background: '#ffffff', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <img src="/lina-ref.png" alt="Lina Front/3-4/Side Specs" style={{ height: '100%', objectFit: 'contain' }} />
+              <img src="/lina-ref.png" alt="Lina Specs" style={{ height: '100%', objectFit: 'contain' }} />
             </div>
             <div style={{ display: 'flex', gap: '4px' }}>
               <a href="/lina-ref.png" download className="btn-copy" style={{ textAlign: 'center', flex: 1, backgroundColor: '#2563eb', color: '#ffffff' }}>Get Ref</a>
@@ -420,10 +416,10 @@ Return ONLY valid JSON matching this exact structure:
                 <strong>Educational Goal:</strong> {generatedScript.learningGoal}
               </p>
 
-              {/* Interactive Production Checklist */}
+              {/* Interactive Production Checklist (Google Flow Subscription Workflow) */}
               <div className="card-inner" style={{ borderColor: '#334155' }}>
                 <span className="label" style={{ color: '#fbbf24', marginBottom: '8px' }}>
-                  ✅ Mobile Production Checklist
+                  ⚡ Google Flow Omni Flash Production Checklist
                 </span>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -431,16 +427,16 @@ Return ONLY valid JSON matching this exact structure:
                     Script Ready
                   </label>
                   <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <input type="checkbox" checked={checklist.voiceover} onChange={() => toggleChecklistItem('voiceover')} />
-                    Voiceover Done
-                  </label>
-                  <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <input type="checkbox" checked={checklist.images} onChange={() => toggleChecklistItem('images')} />
-                    3D Images Done
+                    3D Ref Prompts
                   </label>
                   <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <input type="checkbox" checked={checklist.videoClips} onChange={() => toggleChecklistItem('videoClips')} />
-                    Google Flow Videos
+                    <input type="checkbox" checked={checklist.omniFlash360p} onChange={() => toggleChecklistItem('omniFlash360p')} />
+                    360p 10s Omni Flash
+                  </label>
+                  <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <input type="checkbox" checked={checklist.flowUpscaled} onChange={() => toggleChecklistItem('flowUpscaled')} />
+                    Flow HD Upscale
                   </label>
                   <label style={{ fontSize: '12px', color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <input type="checkbox" checked={checklist.editing} onChange={() => toggleChecklistItem('editing')} />
@@ -533,15 +529,14 @@ Return ONLY valid JSON matching this exact structure:
 
             {/* Scenes */}
             <h3 style={{ fontSize: '15px', color: '#ffffff', marginBottom: '12px', paddingLeft: '4px' }}>
-              🎬 Scene Breakdown, Audio & AI Video Generation
+              🎬 Scene Breakdown & Google Flow Omni Flash Exporters
             </h3>
 
             {generatedScript.scenes.map((scene: any, idx: number) => {
               const sceneId = `scene-${idx}`;
               const audioId = `audio-${idx}`;
               const activeCooldown = cooldowns[sceneId] || 0;
-              const flowImagePrompt = buildGoogleFlowPrompt(scene.imagePrompt, 'image', scene.sceneNumber || idx + 1);
-              const flowVideoPrompt = buildGoogleFlowPrompt(scene.videoPrompt, 'video', scene.sceneNumber || idx + 1);
+              const flowOmniPrompt = buildGoogleFlowOmniPrompt(scene.videoPrompt, scene.narration, scene.sfx, scene.sceneNumber || idx + 1);
 
               return (
                 <div key={scene.sceneNumber || idx} className="card">
@@ -550,7 +545,7 @@ Return ONLY valid JSON matching this exact structure:
                     style={{ borderBottom: '1px solid #1f2937', paddingBottom: '8px', marginBottom: '12px' }}
                   >
                     <span className="label" style={{ color: '#fbbf24', margin: 0 }}>
-                      Scene {scene.sceneNumber || idx + 1}
+                      Scene {scene.sceneNumber || idx + 1} (10-Second Clip)
                     </span>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       <button
@@ -566,13 +561,7 @@ Return ONLY valid JSON matching this exact structure:
                           ? 'Rendering...'
                           : activeCooldown > 0
                           ? `Wait ${activeCooldown}s`
-                          : '✨ Preview Image'}
-                      </button>
-                      <button
-                        onClick={() => copyToClipboard(scene.imagePrompt, `img-${idx}`)}
-                        className="btn-copy"
-                      >
-                        {copiedId === `img-${idx}` ? 'Copied! ✅' : 'Copy Prompt'}
+                          : '✨ Quick Image Preview'}
                       </button>
                     </div>
                   </div>
@@ -588,11 +577,11 @@ Return ONLY valid JSON matching this exact structure:
                     </div>
                   )}
 
-                  {/* Dialogue & Voiceover Engine */}
+                  {/* Dialogue Preview Engine */}
                   <div style={{ marginBottom: '10px' }}>
                     <div className="flex-between" style={{ marginBottom: '4px' }}>
                       <span className="label" style={{ margin: 0 }}>
-                        Dialogue / Voiceover
+                        Dialogue / Voiceover (Auto-generated in Flow)
                       </span>
                       <div style={{ display: 'flex', gap: '4px' }}>
                         <button
@@ -604,7 +593,7 @@ Return ONLY valid JSON matching this exact structure:
                             fontSize: '10px'
                           }}
                         >
-                          {playingAudioId === audioId ? '⏹️ Stop Voice' : '🔊 Listen Voice'}
+                          {playingAudioId === audioId ? '⏹️ Stop' : '🔊 Web Audio Listen'}
                         </button>
                         <button
                           onClick={() => copyToClipboard(scene.narration, `voice-${idx}`)}
@@ -627,71 +616,29 @@ Return ONLY valid JSON matching this exact structure:
                     </div>
                   )}
 
-                  {/* Google Flow Exporter */}
+                  {/* Google Flow Omni Flash Dedicated Exporter Card */}
                   <div className="card-inner" style={{ borderColor: '#3b82f6', backgroundColor: '#090d16' }}>
-                    <span className="label" style={{ color: '#60a5fa', marginBottom: '8px' }}>
-                      🎬 Google Flow (VEO 3.1) Exporters (@Lina & @Train consistency)
+                    <span className="label" style={{ color: '#60a5fa', marginBottom: '6px' }}>
+                      ⚡ Google Flow (Omni Flash 360p + Native Voiceover)
                     </span>
 
                     <div style={{ marginBottom: '10px' }}>
                       <div className="flex-between" style={{ marginBottom: '4px' }}>
-                        <span className="label" style={{ color: '#cbd5e1', fontSize: '10px', margin: 0 }}>📸 Image Prompt</span>
+                        <span className="label" style={{ color: '#cbd5e1', fontSize: '10px', margin: 0 }}>
+                          📋 10-Second Omni Flash Prompt
+                        </span>
                         <button
-                          onClick={() => copyToClipboard(flowImagePrompt, `flow-img-${idx}`)}
+                          onClick={() => copyToClipboard(flowOmniPrompt, `flow-omni-${idx}`)}
                           className="btn-copy"
                           style={{ fontSize: '10px', backgroundColor: '#1d4ed8', color: '#ffffff' }}
                         >
-                          {copiedId === `flow-img-${idx}` ? 'Copied! ✅' : 'Copy Image Prompt'}
+                          {copiedId === `flow-omni-${idx}` ? 'Copied! ✅' : 'Copy Omni Flash Prompt'}
                         </button>
                       </div>
                       <div className="prompt-box" style={{ color: '#93c5fd', fontSize: '11px' }}>
-                        {flowImagePrompt}
+                        {flowOmniPrompt}
                       </div>
                     </div>
 
-                    <div style={{ marginBottom: '10px' }}>
-                      <div className="flex-between" style={{ marginBottom: '4px' }}>
-                        <span className="label" style={{ color: '#cbd5e1', fontSize: '10px', margin: 0 }}>🎥 8s Video Motion Prompt</span>
-                        <button
-                          onClick={() => copyToClipboard(flowVideoPrompt, `flow-vid-${idx}`)}
-                          className="btn-copy"
-                          style={{ fontSize: '10px', backgroundColor: '#1d4ed8', color: '#ffffff' }}
-                        >
-                          {copiedId === `flow-vid-${idx}` ? 'Copied! ✅' : 'Copy Motion Prompt'}
-                        </button>
-                      </div>
-                      <div className="prompt-box" style={{ color: '#93c5fd', fontSize: '11px' }}>
-                        {flowVideoPrompt}
-                      </div>
-                    </div>
-
-                    <div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
                       <a
-                        href="https://labs.google/fx/tools/flow"
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{
-                          display: 'block',
-                          textAlign: 'center',
-                          backgroundColor: '#2563eb',
-                          color: '#ffffff',
-                          padding: '10px',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          textDecoration: 'none'
-                        }}
-                      >
-                        🎬 Open Google Flow to Generate
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </main>
-    </div>
-  );
-}
